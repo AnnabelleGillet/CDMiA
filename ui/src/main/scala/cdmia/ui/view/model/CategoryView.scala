@@ -336,7 +336,10 @@ class CategoryView(val category: Category) {
 
     for (morphism <- _morphisms) {
       morphism match
-        case composition: MorphismComposition => composition.chainOfMorphisms.foreach(highlightIndividualMorphism)
+        case composition: MorphismComposition => composition.chainOfMorphisms.foreach {
+          case i: IdentityMorphism => highlightIdentityMorphism(i)
+          case m => highlightIndividualMorphism(m)
+        }
         case identityMorphism: IdentityMorphism => highlightIdentityMorphism(identityMorphism, bad)
         case _ => highlightIndividualMorphism(morphism)
     }
@@ -386,7 +389,10 @@ class CategoryView(val category: Category) {
 
     for (morphism <- _morphisms) {
       morphism match
-        case composition: MorphismComposition => composition.chainOfMorphisms.foreach(removeHighlightIndividualMorphism)
+        case composition: MorphismComposition => composition.chainOfMorphisms.foreach {
+          case i: IdentityMorphism => removeHighlightOnIdentityMorphism(i)
+          case m => removeHighlightIndividualMorphism(m)
+        }
         case identityMorphism: IdentityMorphism => removeHighlightOnIdentityMorphism(identityMorphism, bad)
         case _ => removeHighlightIndividualMorphism(morphism)
     }

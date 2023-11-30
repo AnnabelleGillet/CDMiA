@@ -233,7 +233,7 @@ object RelationalModel extends Model("Relational Model") {
    * @param primaryKey
    */
   abstract class ForeignKey(name: String, val table: Table, val distantPrimaryKey: PrimaryKey) extends RelationalModelElement(name) {
-    val foreignKey: Object = new Object(name)
+    val foreignKey: Object = new Object(s"${name}_foreign_key")
     val from: Morphism = new Morphism(s"${name}_from", foreignKey, table.obj)
     val to: Morphism = new Morphism(s"${name}_to", foreignKey, distantPrimaryKey.primaryKeyDomain)
     val localForeignKeyAttribute: Morphism = new Morphism(name, table.obj, distantPrimaryKey.primaryKeyDomain)

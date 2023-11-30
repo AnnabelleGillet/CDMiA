@@ -14,12 +14,16 @@ class SchemaInitializer {
 
   def exampleRelationalSchema(): RelationalSchema = {
     val user = new RelationalModel.Table("user")
+    val tweet = new RelationalModel.Table("tweet")
+    val pkUser = new RelationalModel.PrimaryKeyAttribute("id", user, RelationalModel.NumberType)
     RelationalSchemaBuilder("Relational schema")
       .addTable(user)
+      .addTable(tweet)
+      .addPrimaryKeyAttribute(pkUser)
       .addAttribute(new RelationalModel.Attribute("name", user, RelationalModel.StringType))
-      .addAttribute(new RelationalModel.Attribute("age", user, RelationalModel.NumberType))
-      .addAttribute(new RelationalModel.Attribute("address", user, RelationalModel.StringType))
-      .addPrimaryKeyAttribute(new RelationalModel.PrimaryKeyAttribute("id", user, RelationalModel.NumberType))
+      .addPrimaryKeyAttribute(new RelationalModel.PrimaryKeyAttribute("id", tweet, RelationalModel.NumberType))
+      .addAttribute(new RelationalModel.Attribute("text", tweet, RelationalModel.StringType))
+      .addForeignKeyAttribute(new RelationalModel.ForeignKeyAttribute("user_id", tweet, pkUser))
       .build()
   }
 

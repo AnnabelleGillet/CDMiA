@@ -10,7 +10,7 @@ class TemplateMigrationInitializer {
   jsonToRelational()
   relationalToJSON()
   relationalToPropertyGraph()
-  propertyGraphToRelational()
+  //propertyGraphToRelational()
 
   def jsonToRelational(): Unit = {
     TemplateMigrationHandler.addTemplate(new TemplateTransformation("JSON_to_Relational", JSONModel, RelationalModel,
