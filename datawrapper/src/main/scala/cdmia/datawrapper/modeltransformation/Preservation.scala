@@ -4,6 +4,7 @@ import cdmia.core.categorytheory.Object
 import cdmia.core.categorytheory.functor.Functor
 import cdmia.core.categorytheory.morphism.{IdentityMorphism, Isomorphism, Morphism, MorphismComposition}
 import cdmia.core.categorytheory.pattern.Pattern
+import cdmia.datawrapper.Config
 
 /**
  * To implement to verify the preservation of a constraint in a transformation.
@@ -22,7 +23,7 @@ sealed trait Preservation(val name: String, val concernedMorphisms: List[Morphis
   /**
    * Check if this functor preserves the constraint.
    *
-   * @param functor: the [[Functor]] with which to check the constraint.
+   * @param functor the [[Functor]] with which to check the constraint.
    * @return an [[PreservationOutput]] with a [[Boolean]] indicating if the constraint is preserved and a [[String]] message
    *         representing a success or a failure message.
    */
@@ -39,7 +40,9 @@ class IsomorphismPreservation(name: String, isomorphism: Isomorphism)
   extends Preservation(name, List[Morphism](isomorphism.morphism, isomorphism.inverse)) {
 
   override def checkPreservation(functor: Functor): PreservationOutput = {
-    require(functor.domain.isAnIsomorphism(isomorphism.morphism, isomorphism.inverse), "The isomorphism must exist in the source category.")
+    if (!Config.disableRequire) {
+      require(functor.domain.isAnIsomorphism(isomorphism.morphism, isomorphism.inverse), "The isomorphism must exist in the source category.")
+    }
 
     val isPreserved: Boolean = functor.codomain.isAnIsomorphism(functor.getDestinationMorphism(isomorphism.morphism), functor.getDestinationMorphism(isomorphism.inverse))
     if (isPreserved) {
@@ -64,9 +67,11 @@ class PatternPreservation(name: String, pattern: Pattern)
   extends Preservation(name, pattern.getMorphisms) {
 
   override def checkPreservation(functor: Functor): PreservationOutput = {
-    require(pattern.isValid(functor.domain), "The pattern must be valid in the source category.")
-    require(pattern.respectsUniversalProperty(functor.domain), "The pattern must respect the universal property in the source category.")
-
+    if (!Config.disableRequire) {
+      require(pattern.isValid(functor.domain), "The pattern must be valid in the source category.")
+      require(pattern.respectsUniversalProperty(functor.domain), "The pattern must respect the universal property in the source category.")
+    }
+    
     val transformedPattern = pattern.createPatternInDestinationCategory(functor)
 
     if (transformedPattern.isValid(functor.codomain)) {

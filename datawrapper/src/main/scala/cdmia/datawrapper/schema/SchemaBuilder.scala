@@ -7,7 +7,7 @@ import cdmia.core.categorytheory.functor.Functor
 /**
  * Abstract class to implement for a schema builder specialized for a data model.
  *
- * @param name: the name of the schema.
+ * @param name the name of the schema.
  */
 abstract class SchemaBuilder(val name: String) extends Serializable {
   lazy val elements: List[Model.Element]
@@ -34,8 +34,8 @@ abstract class SchemaBuilder(val name: String) extends Serializable {
   /**
    * Build the functor mapping the schema to its model corresponding to the information given to this builder.
    *
-   * @param category: the [[Category]] of the schema.
-   * @param model: the [[Model]] of the schema.
+   * @param category the [[Category]] of the schema.
+   * @param model the [[Model]] of the schema.
    * @return the [[Functor]] mapping the schema to its model.
    */
   protected def buildFunctor(category: Category, model: Model): Functor = {

@@ -9,8 +9,8 @@ import java.lang.{Object => JObject}
  * Check if there is a natural isomorphism between two functors. To use this class, the two functors
  * must have the same category domain and codomain.
  *
- * @param from: the source [[Functor]].
- * @param to: the destination [[Functor]]
+ * @param from the source [[Functor]].
+ * @param to the destination [[Functor]]
  */
 class NaturalIsomorphismChecker(from: Functor, to: Functor) {
   require(from.domain == to.domain, s"Both functors must have the same category domain, but got ${from.domain} and ${to.domain}.")

@@ -30,14 +30,14 @@ class PropertyGraphSchemaBuilderTest extends AnyFunSuite {
   test("A schema with a vertex and a label can be built") {
     val vertex = new Vertex("v")
     val builder = PropertyGraphSchemaBuilder("test").addVertex(vertex)
-      .addVertexLabel(new VertexLabel(vertex, new Label("l")))
+      .addVertexLabel(new VertexLabel(vertex, "l"))
     assertResult(true)(builder.build().isInstanceOf[PropertyGraphSchema])
   }
 
   test("Adding a label without the corresponding vertex throws an exception") {
     val vertex = new Vertex("v")
     val builder = PropertyGraphSchemaBuilder("test").addVertex(vertex)
-    assertThrows[IllegalArgumentException](builder.addVertexLabel(new VertexLabel(new Vertex("v2"), new Label("l"))))
+    assertThrows[IllegalArgumentException](builder.addVertexLabel(new VertexLabel(new Vertex("v2"), "l")))
   }
 
   test("A schema with a vertex and an edge can be built") {
@@ -93,13 +93,13 @@ class PropertyGraphSchemaBuilderTest extends AnyFunSuite {
       .addVertex(in)
       .addVertex(out)
       .addEdge(edge)
-      .addEdgeLabel(new EdgeLabel(edge, new Label("l")))
+      .addEdgeLabel(new EdgeLabel(edge, "l"))
     assertResult(true)(builder.build().isInstanceOf[PropertyGraphSchema])
   }
 
   test("Adding a label without the corresponding edge throws an exception") {
     val vertex = new Vertex("v")
     val builder = PropertyGraphSchemaBuilder("test").addVertex(vertex)
-    assertThrows[IllegalArgumentException](builder.addEdgeLabel(new EdgeLabel(new Edge("v2", vertex, vertex), new Label("l"))))
+    assertThrows[IllegalArgumentException](builder.addEdgeLabel(new EdgeLabel(new Edge("v2", vertex, vertex), "l")))
   }
 }

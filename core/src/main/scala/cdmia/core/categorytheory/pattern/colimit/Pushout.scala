@@ -12,14 +12,14 @@ import cdmia.core.categorytheory.morphism.{Morphism, MorphismComposition}
  *        ↓        ↓
  *        a -----> vertex
  *
- * @param _vertex : the [[categorytheory.Object]] that is the vertex of this pushout.
- * @param a       : the first [[categorytheory.Object]] connected to the vertex.
- * @param b       : the second [[categorytheory.Object]] connected to the vertex.
- * @param c       : the [[categorytheory.Object]] connected to the objects a and b.
- * @param av      : the [[Morphism]] from a to the vertex.
- * @param bv      : the [[Morphism]] from b to the vertex.
- * @param ca      : the [[Morphism]] from c to a.
- * @param cb      : the [[Morphism]] from c to b.
+ * @param _vertex the [[categorytheory.Object]] that is the vertex of this pushout.
+ * @param a       the first [[categorytheory.Object]] connected to the vertex.
+ * @param b       the second [[categorytheory.Object]] connected to the vertex.
+ * @param c       the [[categorytheory.Object]] connected to the objects a and b.
+ * @param av      the [[Morphism]] from a to the vertex.
+ * @param bv      the [[Morphism]] from b to the vertex.
+ * @param ca      the [[Morphism]] from c to a.
+ * @param cb      the [[Morphism]] from c to b.
  */
 class Pushout(_vertex: categorytheory.Object, val a: categorytheory.Object, val b: categorytheory.Object, val c: categorytheory.Object,
               val av: Morphism, val bv: Morphism, val ca: Morphism, val cb: Morphism,
@@ -40,7 +40,7 @@ class Pushout(_vertex: categorytheory.Object, val a: categorytheory.Object, val 
    * For a pushout to be valid in a category, all the objects and morphisms must be in the category, and the diagram must
    * commute.
    *
-   * @param category : the [[Category]] in which to check the validity of this pullback.
+   * @param category the [[Category]] in which to check the validity of this pullback.
    * @return true is this pullback is valid, false otherwise.
    */
   override def isValid(category: Category): Boolean = {
@@ -53,10 +53,10 @@ class Pushout(_vertex: categorytheory.Object, val a: categorytheory.Object, val 
 
   override def explainIsNotValid(category: Category): List[String] = {
     var invalidityReasons: List[String] = List[String]()
-    for (obj <- List[categorytheory.Object](vertex, a, b, c) if !category.objects.exists(_ == vertex)) {
+    for (obj <- List[categorytheory.Object](vertex, a, b, c).distinct if !category.objects.exists(_ == obj)) {
       invalidityReasons :+= s"The object $obj does not exist in the category."
     }
-    for (morphism <- List[Morphism](av, bv, ca, cb) if !category.existsMorphism(morphism)) {
+    for (morphism <- List[Morphism](av, bv, ca, cb).distinct if !category.existsMorphism(morphism)) {
       invalidityReasons :+= s"The Morphism $morphism does not exist in the category."
     }
     if (!category.areEqual(av o ca, bv o cb)) {
@@ -86,8 +86,8 @@ class Pushout(_vertex: categorytheory.Object, val a: categorytheory.Object, val 
           case _ => List(m)
         )
         mt.destination.isInstanceOf[MorphismComposition] &&
-          mt.destination.asInstanceOf[MorphismComposition].chainOfMorphisms.contains(morphism) &&
-          mt.destination.asInstanceOf[MorphismComposition].chainOfMorphisms.forall(m => allMorphismsOfPullback.contains(m))
+          mt.destination.asInstanceOf[MorphismComposition].chainOfMorphisms.contains(morphism) //&&
+          //mt.destination.asInstanceOf[MorphismComposition].chainOfMorphisms.forall(m => allMorphismsOfPullback.contains(m))
       }).map(_.source).toList
     }
 

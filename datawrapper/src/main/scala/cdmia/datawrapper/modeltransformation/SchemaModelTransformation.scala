@@ -7,9 +7,9 @@ import cdmia.core.categorytheory.functor.Functor
 /**
  * Defines a model transformation for a schema.
  *
- * @param source: the source [[Schema]].
- * @param destination: the destination [[Model]].
- * @param functor: the [[Functor]] defining the transformation.
+ * @param source the source [[Schema]].
+ * @param destination the destination [[Model]].
+ * @param functor the [[Functor]] defining the transformation.
  */
 class SchemaModelTransformation(val source: Schema, val destination: Model, val functor: Functor) extends Serializable {
   require(functor.domain == source.category, s"The source of the transformation must be the schema, but got ${source.model.name} for the schema and ${functor.domain.name} for the source of the transformation.")
@@ -20,8 +20,8 @@ class SchemaModelTransformation(val source: Schema, val destination: Model, val 
   /**
    * Apply a template transformation on the schema.
    *
-   * @param source: the source [[Schema]].
-   * @param template: the [[TemplateTransformation]] to apply.
+   * @param source the source [[Schema]].
+   * @param template the [[TemplateTransformation]] to apply.
    */
   def this(source: Schema, template: TemplateTransformation) = {
     this(source, template.destination, template.functor o source.functorTowardsModel)

@@ -1,5 +1,5 @@
 ThisBuild / organization := "io.github.annabellegillet"
-ThisBuild / version := "0.1.0"
+ThisBuild / version := "0.2.0"
 
 ThisBuild / scalaVersion := "3.3.0"
 
@@ -23,12 +23,16 @@ lazy val root = (project in file("."))
 
 lazy val core = project
   .settings(
-    name := "CDMiA-core"
+    name := "CDMiA-core",
+    libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
   )
 
 lazy val datawrapper = project
   .settings(
-    name := "CDMiA-datawrapper"
+    name := "CDMiA-datawrapper",
+    libraryDependencies += "org.postgresql" % "postgresql" % "42.7.3",
+    libraryDependencies += "io.zonky.test" % "embedded-postgres" % "2.0.7" % Test,
+    assemblyJarName in assembly := s"CDMiA-DataWrapper-${version.value}.jar",
   )
   .dependsOn(core)
 

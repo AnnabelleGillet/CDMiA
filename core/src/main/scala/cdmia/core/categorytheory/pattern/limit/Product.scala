@@ -1,6 +1,6 @@
 package cdmia.core.categorytheory.pattern.limit
 
-import cdmia.core.categorytheory.{Category, Object}
+import cdmia.core.categorytheory.{Category, Config, Object}
 import cdmia.core.categorytheory.functor.Functor
 import cdmia.core.categorytheory.morphism.Morphism
 
@@ -14,9 +14,9 @@ import java.lang.Object as JObject
  *      /   \
  *     a     b
  *
- * @param _vertex: the [[Object]] that is the vertex of this product.
- * @param objects: the [[Object]]s that are part of this product (except the vertex).
- * @param morphisms: the [[Morphism]]s that are part of this product.
+ * @param _vertex the [[Object]] that is the vertex of this product.
+ * @param objects the [[Object]]s that are part of this product (except the vertex).
+ * @param morphisms the [[Morphism]]s that are part of this product.
  */
 class Product(_vertex: Object, val objects: Iterable[Object], val morphisms: Iterable[Morphism], name: String = "Product") extends Limit(_vertex, name) {
   require(objects.toSet.size == objects.size, "A product cannot be built with duplicate objects.")
@@ -35,7 +35,7 @@ class Product(_vertex: Object, val objects: Iterable[Object], val morphisms: Ite
   /**
    * For a product to be valid in a category, all the objects and morphisms must be in the category.
    *
-   * @param category: the [[Category]] in which to check the validity of this product.
+   * @param category the [[Category]] in which to check the validity of this product.
    *  @return true is this product is valid, false otherwise.
    */
   override def isValid(category: Category): Boolean = {
@@ -46,10 +46,7 @@ class Product(_vertex: Object, val objects: Iterable[Object], val morphisms: Ite
 
   override def explainIsNotValid(category: Category): List[String] = {
     var invalidityReasons: List[String] = List[String]()
-    if (!category.objects.exists(_ == vertex)) {
-      invalidityReasons :+= s"The object $vertex does not exist in the category."
-    }
-    for (obj <- objects if !category.objects.exists(_ == vertex)) {
+    for (obj <- (objects.toList :+ vertex).distinct if !category.objects.exists(_ == obj)) {
       invalidityReasons :+= s"The object $obj does not exist in the category."
     }
     for (morphism <- morphisms if !category.existsMorphism(morphism)) {

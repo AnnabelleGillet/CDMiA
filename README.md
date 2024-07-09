@@ -27,10 +27,13 @@ Its goal is to provide information regarding the impacts of a migration, in orde
 ## How to use CDMiA
 CDMiA has been developed in Scala, and relies on JavaFX for the UI part. It can be run with Java 8 or higher.
 ```bash
-java -jar CDMiA-0.1.0.jar
+java -jar CDMiA-0.2.0.jar
 ```
+
+## Data wrapper
+The data wrapper module is able to extract schemas from relational data sources, and to represent the as categories. See the experiments folder for an example of use.
 
 ## Future developments
 We plan to add several features to CDMiA:
-- automatically extracting a schema from a data source into the application;
+- automatically extracting a schema from a property graph and a JSON data source into the application;
 - executing a migration once it has been defined.

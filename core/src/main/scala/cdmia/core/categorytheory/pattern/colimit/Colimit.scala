@@ -10,7 +10,7 @@ import java.lang.Object as JObject
 /**
  * Represents a colimit with its vertex. Each type of colimit must implements this class to define their specificities.
  *
- * @param vertex: the [[Object]] that is the vertex of the cocone of this colimit.
+ * @param vertex the [[Object]] that is the vertex of the cocone of this colimit.
  */
 abstract class Colimit(val vertex: Object, name: String = "Colimit") extends Pattern(name) {
   protected val objectsToCheck: Iterable[Object]
@@ -20,7 +20,7 @@ abstract class Colimit(val vertex: Object, name: String = "Colimit") extends Pat
    * Check if this colimit is valid within a given category. The conditions of the validity depends on
    * the type of the colimit.
    *
-   * @param category : the [[Category]] in which to check the validity of this colimit.
+   * @param category the [[Category]] in which to check the validity of this colimit.
    * @return true is this colimit is valid, false otherwise.
    */
   override def isValid(category: Category): Boolean
@@ -29,7 +29,7 @@ abstract class Colimit(val vertex: Object, name: String = "Colimit") extends Pat
    * Explain why the colimit is not valid within a given category. The conditions of the validity depends on
    * the type of the colimit.
    *
-   * @param category : the [[Category]] in which to check the validity of this colimit.
+   * @param category the [[Category]] in which to check the validity of this colimit.
    * @return a [[List]] of invalidity reasons.
    */
   override def explainIsNotValid(category: Category): List[String]
@@ -37,7 +37,7 @@ abstract class Colimit(val vertex: Object, name: String = "Colimit") extends Pat
   /**
    * Create this colimit in the destination category of a functor, according to the specified object and morphism transformations.
    *
-   * @param functor : the [[Functor]] specifying the object and morphism transformations.
+   * @param functor the [[Functor]] specifying the object and morphism transformations.
    * @return the [[Colimit]] in the destination category.
    */
   override def createPatternInDestinationCategory(functor: Functor): Colimit
@@ -46,7 +46,7 @@ abstract class Colimit(val vertex: Object, name: String = "Colimit") extends Pat
    * Check if this colimit is preserved by the given functor. This colimit must also be valid and must respect the universal
    * property in the source category to check its preservation.
    *
-   * @param functor : the [[Functor]] for which to check the preservation of this colimit.
+   * @param functor the [[Functor]] for which to check the preservation of this colimit.
    * @return true if the colimit is preserved, false otherwise.
    */
   override def isPreservedByFunctor(functor: Functor): Boolean = {
@@ -61,7 +61,7 @@ abstract class Colimit(val vertex: Object, name: String = "Colimit") extends Pat
   /**
    * Create this colimit in the source category of a functor, according to the specified object and morphism transformations.
    *
-   * @param functor : the [[Functor]] specifying the object and morphism transformations.
+   * @param functor the [[Functor]] specifying the object and morphism transformations.
    * @return the list of possible [[Colimit]]s in the source category.
    */
   override def createPatternsInSourceCategory(functor: Functor): List[Colimit]
@@ -70,7 +70,7 @@ abstract class Colimit(val vertex: Object, name: String = "Colimit") extends Pat
    * Check if this colimit also exists in a source category. This colimit must also be valid and must respect the universal
    * property in the destination category to check its existence.
    *
-   * @param functor : the [[Functor]] for which to check the existence of this colimit.
+   * @param functor the [[Functor]] for which to check the existence of this colimit.
    * @return the list of [[Colimit]]s that match the given limit in the source category.
    */
   override def existsInSourceCategory(functor: Functor): List[Colimit] = {
@@ -87,7 +87,7 @@ abstract class Colimit(val vertex: Object, name: String = "Colimit") extends Pat
    * vertex of the cocone of the colimit, there must exist a unique morphism from the vertex of the colimit with witch the
    * diagram commutes).
    *
-   * @param category: the [[Category]] in which to check the respect of the universal property.
+   * @param category the [[Category]] in which to check the respect of the universal property.
    * @return true is the universal property is respected, false otherwise.
    */
   override def respectsUniversalProperty(category: Category): Boolean = {

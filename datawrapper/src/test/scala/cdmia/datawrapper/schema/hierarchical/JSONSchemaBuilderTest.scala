@@ -16,15 +16,28 @@ class JSONSchemaBuilderTest extends AnyFunSuite {
 
   test("A schema with a nested document can be built") {
     val document = new Document("d")
+    val nestedDocument = new Document("nested")
     val builder = JSONSchemaBuilder("test")
       .addDocument(document)
-      .addDocument(new NestedDocument("d", document))
+      .addDocument(nestedDocument)
+      .addDocument(new NestedDocument(document, "d", nestedDocument))
     assertResult(true)(builder.build().isInstanceOf[JSONSchema])
   }
 
   test("Adding a nested document without the corresponding document throws an exception") {
+    val document = new Document("d")
+    val nestedDocument = new Document("nested")
     val builder = JSONSchemaBuilder("test")
-    assertThrows[IllegalArgumentException](builder.addDocument(new NestedDocument("d", new Document("d2"))))
+      .addDocument(nestedDocument)
+    assertThrows[IllegalArgumentException](builder.addDocument(new NestedDocument(document, "d", nestedDocument)))
+  }
+
+  test("Adding a nested document without the corresponding nested document throws an exception") {
+    val document = new Document("d")
+    val nestedDocument = new Document("nested")
+    val builder = JSONSchemaBuilder("test")
+      .addDocument(document)
+    assertThrows[IllegalArgumentException](builder.addDocument(new NestedDocument(document, "d", nestedDocument)))
   }
 
   test("A schema with a document and simple attributes can be built") {
@@ -67,7 +80,7 @@ class JSONSchemaBuilderTest extends AnyFunSuite {
     val builder = JSONSchemaBuilder("test")
       .addDocument(document)
       .addArray(array)
-      .addArrayIndex(new ArrayContentDataType(array, StringType))
+      .addArrayIndex(new AttributeArrayContent(array, StringType))
     assertResult(true)(builder.build().isInstanceOf[JSONSchema])
   }
 
@@ -77,8 +90,8 @@ class JSONSchemaBuilderTest extends AnyFunSuite {
     val builder = JSONSchemaBuilder("test")
       .addDocument(document)
       .addArray(array)
-      .addArrayIndex(new ArrayContentDataType(array, StringType))
-    assertThrows[IllegalArgumentException](builder.addArrayIndex(new ArrayContentDataType(new ArrayAttribute("a", document), StringType)))
+      .addArrayIndex(new AttributeArrayContent(array, StringType))
+    assertThrows[IllegalArgumentException](builder.addArrayIndex(new AttributeArrayContent(new ArrayAttribute("a", document), StringType)))
   }
 
   test("A schema with a document and an array with object condition can be built") {
@@ -87,7 +100,7 @@ class JSONSchemaBuilderTest extends AnyFunSuite {
     val builder = JSONSchemaBuilder("test")
       .addDocument(document)
       .addArray(array)
-      .addArrayIndex(new ArrayContentObject(array, document))
+      .addArrayIndex(new DocumentArrayContent(array, document))
     assertResult(true)(builder.build().isInstanceOf[JSONSchema])
   }
 
@@ -97,7 +110,7 @@ class JSONSchemaBuilderTest extends AnyFunSuite {
     val builder = JSONSchemaBuilder("test")
       .addDocument(document)
       .addArray(array)
-      .addArrayIndex(new ArrayContentObject(array, document))
-    assertThrows[IllegalArgumentException](builder.addArrayIndex(new ArrayContentObject(new ArrayAttribute("a", document), document)))
+      .addArrayIndex(new DocumentArrayContent(array, document))
+    assertThrows[IllegalArgumentException](builder.addArrayIndex(new DocumentArrayContent(new ArrayAttribute("a", document), document)))
   }
 }

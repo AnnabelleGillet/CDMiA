@@ -3,8 +3,8 @@ package cdmia.core.categorytheory.morphism
 /**
  * Represents an isomorphism, i.e., an invertible morphism.
  *
- * @param morphism: the [[Morphism]].
- * @param inverse: the inverse of the [[Morphism]].
+ * @param morphism the [[Morphism]].
+ * @param inverse the inverse of the [[Morphism]].
  */
 class Isomorphism(val morphism: Morphism, val inverse: Morphism) {
   require(morphism.domain == inverse.codomain,

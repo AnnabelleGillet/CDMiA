@@ -7,9 +7,9 @@ import cdmia.datawrapper.model.Model
 /**
  * Defines a template transformation between two models, that can be used to migrate the model of a schema.
  * 
- * @param source: the source [[Model]].
- * @param destination: the destination [[Model]].
- * @param functor: the [[Functor]] defining the transformation.
+ * @param source the source [[Model]].
+ * @param destination the destination [[Model]].
+ * @param functor the [[Functor]] defining the transformation.
  */
 class TemplateTransformation(val name: String, val source: Model, val destination: Model, val functor: Functor) extends Serializable {
   require(functor.domain == source.category, s"The source of the transformation must be the source model, but got ${source.name} for the source model and ${functor.domain.name} for the source of the transformation.")

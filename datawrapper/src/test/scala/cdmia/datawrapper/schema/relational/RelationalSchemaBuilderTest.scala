@@ -18,10 +18,10 @@ class RelationalSchemaBuilderTest extends AnyFunSuite {
     val table = new Table("t")
     val builder = RelationalSchemaBuilder("test")
       .addTable(table)
-      .addAttribute(new Attribute("a1", table, StringType))
-      .addAttribute(new Attribute("a2", table, NumberType))
-      .addAttribute(new Attribute("a3", table, BooleanType))
-      .addAttribute(new Attribute("a4", table, DateType))
+      .addAttribute(Attribute("a1", table, StringType))
+      .addAttribute(Attribute("a2", table, NumberType))
+      .addAttribute(Attribute("a3", table, BooleanType))
+      .addAttribute(Attribute("a4", table, DateType))
     assertResult(true)(builder.build().isInstanceOf[RelationalSchema])
   }
 
@@ -30,69 +30,110 @@ class RelationalSchemaBuilderTest extends AnyFunSuite {
     val dataType = StringType
     val builder = RelationalSchemaBuilder("test")
       .addTable(table)
-    assertThrows[IllegalArgumentException](builder.addAttribute(new Attribute("a", new Table("t"), dataType)))
+    assertThrows[IllegalArgumentException](builder.addAttribute(Attribute("a", new Table("t1"), dataType)))
   }
 
-  test("A schema with a table and a primary key attributes can be built") {
+  test("A schema with a table and a primary key attribute can be built") {
     val table = new Table("t")
     val dataType = StringType
+    val pkAttribute1 = Attribute("a1", table, dataType)
+    val pkAttribute2 = Attribute("a2", table, dataType)
     val builder = RelationalSchemaBuilder("test")
       .addTable(table)
-      .addPrimaryKeyAttribute(new PrimaryKeyAttribute("a", table, dataType))
+      .addAttribute(pkAttribute1)
+      .addAttribute(pkAttribute2)
+      .addPrimaryKey(new PrimaryKey("pk", table, List(pkAttribute1)))
     assertResult(true)(builder.build().isInstanceOf[RelationalSchema])
-    assertResult(true)(builder.addPrimaryKeyAttribute(new PrimaryKeyAttribute("a2", table, dataType)).build().isInstanceOf[RelationalSchema])
+    assertResult(true)(builder.addPrimaryKey(new PrimaryKey("pk2", table, List(pkAttribute2))).build().isInstanceOf[RelationalSchema])
   }
 
-  test("A schema with a table and a composed primary key attributes can be built") {
+  test("A schema with a table and a composed primary key can be built") {
     val table = new Table("t")
     val dataType = StringType
+    val pkAttribute1 = Attribute("a1", table, dataType)
+    val pkAttribute2 = Attribute("a2", table, dataType)
+    val pkAttribute3 = Attribute("a3", table, dataType)
+    val pkAttribute4 = Attribute("a4", table, dataType)
     val builder = RelationalSchemaBuilder("test")
       .addTable(table)
-      .addComposedPrimaryKeyAttribute(new ComposedPrimaryKeyAttribute("a", table, List[IndividualComposedPrimaryKeyAttribute](IndividualComposedPrimaryKeyAttribute("a1", dataType), IndividualComposedPrimaryKeyAttribute("a2", dataType))))
+      .addAttribute(pkAttribute1)
+      .addAttribute(pkAttribute2)
+      .addAttribute(pkAttribute3)
+      .addAttribute(pkAttribute4)
+      .addPrimaryKey(new PrimaryKey("pk", table, List(pkAttribute1, pkAttribute2)))
     assertResult(true)(builder.build().isInstanceOf[RelationalSchema])
-    assertResult(true)(builder.addComposedPrimaryKeyAttribute(new ComposedPrimaryKeyAttribute("a", table, List[IndividualComposedPrimaryKeyAttribute](IndividualComposedPrimaryKeyAttribute("a1", dataType), IndividualComposedPrimaryKeyAttribute("a2", dataType)))).build().isInstanceOf[RelationalSchema])
+    assertResult(true)(builder.addPrimaryKey(new PrimaryKey("pk2", table, List(pkAttribute3, pkAttribute4))).build().isInstanceOf[RelationalSchema])
+    assertResult(true)(builder.addPrimaryKey(new PrimaryKey("pk2", table, List(pkAttribute1, pkAttribute4))).build().isInstanceOf[RelationalSchema])
   }
 
   test("Adding a primary key without the corresponding table throws an exception") {
     val table = new Table("t")
+    val table2 = new Table("t")
     val dataType = StringType
+    val pkAttribute1 = Attribute("a1", table, dataType)
     val builder = RelationalSchemaBuilder("test")
       .addTable(table)
-    assertThrows[IllegalArgumentException](builder.addPrimaryKeyAttribute(new PrimaryKeyAttribute("a", new Table("t"), dataType)))
+      .addAttribute(pkAttribute1)
+    assertThrows[IllegalArgumentException](builder.addPrimaryKey(new PrimaryKey("pk", table2, List(pkAttribute1))))
+    assertThrows[IllegalArgumentException](
+      builder
+        .addTable(table2)
+        .addPrimaryKey(new PrimaryKey("pk", table2, List(pkAttribute1)))
+    )
   }
 
   test("A schema with a table and a foreign key attribute can be built") {
     val table = new Table("t")
+    val table2 = new Table("t2")
     val dataType = StringType
-    val primaryKey = new PrimaryKeyAttribute("a", table, dataType)
+    val primaryKeyAttribute = Attribute("a", table, dataType)
+    val foreignKeyAttribute = Attribute("fka", table2, dataType)
+    val primaryKey = new PrimaryKey("pk", table, List(primaryKeyAttribute))
     val builder = RelationalSchemaBuilder("test")
       .addTable(table)
-      .addPrimaryKeyAttribute(primaryKey)
-      .addForeignKeyAttribute(new ForeignKeyAttribute("f", table, primaryKey))
+      .addTable(table2)
+      .addAttribute(primaryKeyAttribute)
+      .addAttribute(foreignKeyAttribute)
+      .addPrimaryKey(primaryKey)
+      .addForeignKey(new ForeignKey("f", table2, primaryKey, Map(foreignKeyAttribute -> primaryKeyAttribute)))
     assertResult(true)(builder.build().isInstanceOf[RelationalSchema])
   }
 
   test("A schema with a table and a composed foreign key attribute can be built") {
     val table = new Table("t")
+    val table2 = new Table("t2")
     val dataType = StringType
-    val attribute1 = IndividualComposedPrimaryKeyAttribute("a1", dataType)
-    val attribute2 = IndividualComposedPrimaryKeyAttribute("a2", dataType)
-    val primaryKey = new ComposedPrimaryKeyAttribute("a", table, List(attribute1, attribute2))
+    val attribute1 = Attribute("a1", table, dataType)
+    val attribute2 = Attribute("a2", table, dataType)
+    val fkAttribute1 = Attribute("fka1", table2, dataType)
+    val fkAttribute2 = Attribute("fka2", table2, dataType)
+    val primaryKey = new PrimaryKey("a", table, List(attribute1, attribute2))
     val builder = RelationalSchemaBuilder("test")
       .addTable(table)
-      .addComposedPrimaryKeyAttribute(primaryKey)
-      .addComposedForeignKeyAttribute(new ComposedForeignKeyAttribute("f", table, primaryKey, Map(attribute1 -> "la1", attribute2 -> "la2")))
+      .addTable(table2)
+      .addAttribute(attribute1)
+      .addAttribute(attribute2)
+      .addAttribute(fkAttribute1)
+      .addAttribute(fkAttribute2)
+      .addPrimaryKey(primaryKey)
+      .addForeignKey(new ForeignKey("f", table2, primaryKey, Map(fkAttribute1 -> attribute1, fkAttribute2 -> attribute2)))
     assertResult(true)(builder.build().isInstanceOf[RelationalSchema])
   }
 
   test("Adding a foreign key without the corresponding table or primary key throws an exception") {
     val table = new Table("t")
+    val table2 = new Table("t2")
     val dataType = StringType
-    val primaryKey = new PrimaryKeyAttribute("a", table, dataType)
+    val primaryKeyAttribute = Attribute("a", table, dataType)
+    val foreignKeyAttribute = Attribute("a", table2, dataType)
+    val primaryKey = new PrimaryKey("pk", table, List(primaryKeyAttribute))
     val builder = RelationalSchemaBuilder("test")
       .addTable(table)
-      .addPrimaryKeyAttribute(primaryKey)
-    assertThrows[IllegalArgumentException](builder.addForeignKeyAttribute(new ForeignKeyAttribute("f", new Table("t"), primaryKey)))
-    assertThrows[IllegalArgumentException](builder.addForeignKeyAttribute(new ForeignKeyAttribute("f", table, new PrimaryKeyAttribute("a", table, dataType))))
+      .addTable(table2)
+      .addAttribute(primaryKeyAttribute)
+      .addAttribute(foreignKeyAttribute)
+      .addPrimaryKey(primaryKey)
+    assertThrows[IllegalArgumentException](builder.addForeignKey(new ForeignKey("f", new Table("t"), primaryKey, Map(foreignKeyAttribute -> primaryKeyAttribute))))
+    assertThrows[IllegalArgumentException](builder.addForeignKey(new ForeignKey("f", table, new PrimaryKey("pk2", table, List(primaryKeyAttribute)), Map(foreignKeyAttribute -> primaryKeyAttribute))))
   }
 }

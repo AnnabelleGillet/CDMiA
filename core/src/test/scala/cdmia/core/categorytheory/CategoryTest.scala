@@ -40,17 +40,17 @@ class CategoryTest extends AnyFunSuite {
       .withMorphismEqualities(equalities)
       .build()
 
-    assertResult(6)(category.morphismEqualitiesForEachMorphism.size)
-    assertResult(0)(category.morphismEqualitiesForEachComposition.size)
+    assertResult(6)(category.morphismEqualitiesForEachMorphism.flatMap(_._2).size)
+    assertResult(0)(category.morphismEqualitiesForEachComposition.flatMap(_._2).size)
 
-    assertResult(List[Morphism](maa, mab, mab2, mba, mba2, mba3).sortWith(_.name > _.name))(category.morphismEqualitiesForEachMorphism.keys.toList.sortWith(_.name > _.name))
+    assertResult(List[Morphism](maa, mab, mab2, mba, mba2, mba3).sortWith(_.name > _.name))(category.morphismEqualitiesForEachMorphism.flatMap(_._2).keys.toList.sortWith(_.name > _.name))
 
-    assertResult(List[Morphism](maa))(category.morphismEqualitiesForEachMorphism(maa).toList)
-    assertResult(List[Morphism](mab, mab2).sortWith(_.name > _.name))(category.morphismEqualitiesForEachMorphism(mab).toList.sortWith(_.name > _.name))
-    assertResult(List[Morphism](mab, mab2).sortWith(_.name > _.name))(category.morphismEqualitiesForEachMorphism(mab2).toList.sortWith(_.name > _.name))
-    assertResult(List[Morphism](mba, mba2, mba3).sortWith(_.name > _.name))(category.morphismEqualitiesForEachMorphism(mba).toList.sortWith(_.name > _.name))
-    assertResult(List[Morphism](mba, mba2, mba3).sortWith(_.name > _.name))(category.morphismEqualitiesForEachMorphism(mba2).toList.sortWith(_.name > _.name))
-    assertResult(List[Morphism](mba, mba2, mba3).sortWith(_.name > _.name))(category.morphismEqualitiesForEachMorphism(mba3).toList.sortWith(_.name > _.name))
+    assertResult(List[Morphism](maa))(category.morphismEqualitiesForEachMorphism.flatMap(_._2)(maa).toList)
+    assertResult(List[Morphism](mab, mab2).sortWith(_.name > _.name))(category.morphismEqualitiesForEachMorphism.flatMap(_._2)(mab).toList.sortWith(_.name > _.name))
+    assertResult(List[Morphism](mab, mab2).sortWith(_.name > _.name))(category.morphismEqualitiesForEachMorphism.flatMap(_._2)(mab2).toList.sortWith(_.name > _.name))
+    assertResult(List[Morphism](mba, mba2, mba3).sortWith(_.name > _.name))(category.morphismEqualitiesForEachMorphism.flatMap(_._2)(mba).toList.sortWith(_.name > _.name))
+    assertResult(List[Morphism](mba, mba2, mba3).sortWith(_.name > _.name))(category.morphismEqualitiesForEachMorphism.flatMap(_._2)(mba2).toList.sortWith(_.name > _.name))
+    assertResult(List[Morphism](mba, mba2, mba3).sortWith(_.name > _.name))(category.morphismEqualitiesForEachMorphism.flatMap(_._2)(mba3).toList.sortWith(_.name > _.name))
   }
 
   test("A category should produce the correct map of composition equalities") {
@@ -62,9 +62,9 @@ class CategoryTest extends AnyFunSuite {
     assertResult(3)(category.morphismEqualitiesForEachMorphism.size)
     assertResult(1)(category.morphismEqualitiesForEachComposition.size)
 
-    assertResult(List[Morphism](composition))(category.morphismEqualitiesForEachComposition.map(_._1))
+    assertResult(List[Morphism](composition))(category.morphismEqualitiesForEachComposition.flatMap(_._2).map(_._1).toList)
 
-    assertResult(List[Morphism](composition, maa).sortWith(_.name > _.name))(category.morphismEqualitiesForEachComposition.filter(_._1 == composition).head._2.toList.sortWith(_.name > _.name))
+    assertResult(List[Morphism](composition, maa).sortWith(_.name > _.name))(category.morphismEqualitiesForEachComposition.flatMap(_._2).filter(_._1 == composition).head._2.toList.sortWith(_.name > _.name))
   }
 
   test("existsMorphism should return true if at least one morphism exists between two objects.") {

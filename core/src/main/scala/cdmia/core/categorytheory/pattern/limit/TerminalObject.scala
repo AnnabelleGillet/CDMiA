@@ -7,7 +7,7 @@ import cdmia.core.categorytheory.morphism.Morphism
 /**
  * An object is terminal if, for every object x of C, there exists a unique morphism !:x -> vertex.
  * 
- * @param _vertex: the terminal [[Object]].
+ * @param _vertex the terminal [[Object]].
  */
 class TerminalObject(_vertex: Object, name: String = "TerminalObject") extends Limit(_vertex, name) {
   override protected val objectsToCheck: Iterable[Object] = Iterable[Object]()
@@ -20,7 +20,7 @@ class TerminalObject(_vertex: Object, name: String = "TerminalObject") extends L
   /**
    * For a terminal to be valid in a category, the vertex must be in the category.
    *
-   * @param category : the [[Category]] in which to check the validity of this terminal object.
+   * @param category the [[Category]] in which to check the validity of this terminal object.
    * @return true is this terminal object is valid, false otherwise.
    */
   override def isValid(category: Category): Boolean = {

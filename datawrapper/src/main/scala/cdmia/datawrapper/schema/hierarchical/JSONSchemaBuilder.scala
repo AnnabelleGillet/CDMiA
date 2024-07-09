@@ -2,7 +2,7 @@ package cdmia.datawrapper.schema.hierarchical
 
 import cdmia.datawrapper.model.Model
 import cdmia.datawrapper.model.hierarchical.JSONModel
-import cdmia.datawrapper.model.hierarchical.JSONModel.{ArrayAttribute, ArrayContent, ArrayContentDataType, Attribute, DataType, Document, NestedDocument}
+import cdmia.datawrapper.model.hierarchical.JSONModel.{ArrayAttribute, ArrayContent, AttributeArrayContent, Attribute, DataType, Document, NestedDocument}
 import cdmia.datawrapper.schema.SchemaBuilder
 import cdmia.core.categorytheory.Category
 import cdmia.core.categorytheory.functor.Functor
@@ -12,14 +12,14 @@ import cdmia.datawrapper.model.hierarchical.JSONModel.{ArrayAttribute, ArrayCont
 /**
  * Builder used to produce a JSON schema.
  *
- * @param name         : the name of the schema.
- * @param documents    : the [[Document]]s of the schema.
- * @param dataTypes    : the [[DataType]]s of the schema.
- * @param attributes   : the [[Attribute]]s of the schema.
- * @param arrays       : the [[ArrayAttribute]]s of the schema.
- * @param arrayIndexes : the [[ArrayContent]]es of the schema.
+ * @param name         the name of the schema.
+ * @param documents    the [[Document]]s of the schema.
+ * @param dataTypes    the [[DataType]]s of the schema.
+ * @param attributes   the [[Attribute]]s of the schema.
+ * @param arrays       the [[ArrayAttribute]]s of the schema.
+ * @param arrayIndexes the [[ArrayContent]]es of the schema.
  */
-class JSONSchemaBuilder(name: String,
+private class JSONSchemaBuilder (name: String,
                         val documents: List[Document],
                         val dataTypes: List[DataType],
                         val attributes: List[Attribute],
@@ -32,7 +32,10 @@ class JSONSchemaBuilder(name: String,
    */
   def addDocument(document: Document): JSONSchemaBuilder = {
     document match
-      case nested: NestedDocument => require(documents.contains(nested.insideDocument), s"The document ${nested.insideDocument.name} must have been added to the builder.")
+      case nested: NestedDocument => {
+        require(documents.contains(nested.insideDocument), s"The document ${nested.insideDocument.name} must have been added to the builder.")
+        require(documents.contains(nested.nestedDocument), s"The document ${nested.nestedDocument.name} must have been added to the builder.")
+      }
       case _ => ()
 
     new JSONSchemaBuilder(name, documents :+ document, dataTypes, attributes, arrays, arrayIndexes)
@@ -64,7 +67,7 @@ class JSONSchemaBuilder(name: String,
     require(arrays.contains(arrayIndex.array), s"The array ${arrayIndex.array.name} must have been added to the builder.")
 
     val newDataTypes = arrayIndex match
-      case arrayIndexDT: ArrayContentDataType => if (dataTypes.contains(arrayIndexDT.dataType)) {
+      case arrayIndexDT: AttributeArrayContent => if (dataTypes.contains(arrayIndexDT.dataType)) {
         dataTypes
       } else {
         dataTypes :+ arrayIndexDT.dataType

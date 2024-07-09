@@ -4,6 +4,9 @@ import cdmia.core.categorytheory.morphism.{IdentityMorphism, Isomorphism, Morphi
 import cdmia.core.categorytheory.pattern.colimit.Colimit
 import cdmia.core.categorytheory.pattern.limit.Limit
 
+import scala.collection.parallel.immutable.ParMap
+import scala.collection.parallel.CollectionConverters._
+
 /**
  * A category. To be valid, it must respect some constraints:
  * - there is no duplicate object ;
@@ -13,13 +16,13 @@ import cdmia.core.categorytheory.pattern.limit.Limit
  *
  * The identity morphisms must not be provided as the are automatically computed.
  *
- * @param name: the name of this category.
- * @param objects: an [[Iterable]] that contains the objects of this category.
- * @param morphisms: an [[Iterable]] that contains the morphisms of this category.
- * @param morphismEqualities: an [[Iterable]] that contains the morphism equalities of this category.
- * @param isomorphisms: an [[Iterable]] that contains the isomorphisms of this category.
- * @param limits: an [[Iterable]] that contains the limits of this category.
- * @param colimits: an [[Iterable]] that contains the colimits of this category.
+ * @param name the name of this category.
+ * @param objects an [[Iterable]] that contains the objects of this category.
+ * @param morphisms an [[Iterable]] that contains the morphisms of this category.
+ * @param _morphismEqualities an [[Iterable]] that contains the morphism equalities of this category.
+ * @param isomorphisms an [[Iterable]] that contains the isomorphisms of this category.
+ * @param limits an [[Iterable]] that contains the limits of this category.
+ * @param colimits an [[Iterable]] that contains the colimits of this category.
  */
 class Category private[core] (val name: String,
                               val objects: Iterable[Object],
@@ -28,63 +31,84 @@ class Category private[core] (val name: String,
                               val isomorphisms: Iterable[Isomorphism],
                               val limits: Iterable[Limit],
                               val colimits: Iterable[Colimit]) {
-  require(objects.toSet.size == objects.size, "A category cannot be built with duplicate objects.")
-  require(morphisms.toSet.size == morphisms.size, "A category cannot be built with duplicate morphisms.")
-  require(morphisms.map(_.domain).forall(d => objects.exists(o => o == d)), "All the domain of the morphisms must be in the category.")
-  require(morphisms.map(_.codomain).forall(c => objects.exists(o => o == c)), "All the codomain of the morphisms must be in the category.")
-  require(!morphisms.exists(_.isInstanceOf[IdentityMorphism]), "The identity morphisms are automatically computed and should not be added.")
+  if (!Config.disableRequire) {
+    require(objects.toSet.size == objects.size, "A category cannot be built with duplicate objects.")
+    require(morphisms.toSet.size == morphisms.size, "A category cannot be built with duplicate morphisms.")
+    require(morphisms.map(_.domain).forall(d => objects.exists(o => o == d)), "All the domain of the morphisms must be in the category.")
+    require(morphisms.map(_.codomain).forall(c => objects.exists(o => o == c)), "All the codomain of the morphisms must be in the category.")
+    require(!morphisms.exists(_.isInstanceOf[IdentityMorphism]), "The identity morphisms are automatically computed and should not be added.")
+  }
 
   /**
    * The identity morphisms of this category.
    */
   val identityMorphisms: Iterable[Morphism] = objects.map(_.identityMorphism)
 
-  val morphismEqualities: Iterable[MorphismEquality] = _morphismEqualities.map(me => {
+  val morphismEqualities: Map[ObjectsIndex, Iterable[MorphismEquality]] = _morphismEqualities.groupMap(me => ObjectsIndex(me.morphisms.head.domain, me.morphisms.head.codomain))(me => {
     new MorphismEquality(me.morphisms.map {
-      case composition: MorphismComposition => removeIsomorphisms(composition)
+      case composition: MorphismComposition => if (composition.domain == composition.codomain) removeIsomorphisms(composition) else composition
       case e => e
     })
   })
 
+  case class ObjectsIndex(domain: Object, codomain: Object)
   /**
    * For each morphism, gets all the equal morphisms (including itself).
    */
-  private val _morphismEqualitiesForEachMorphism: Map[Morphism, Set[Morphism]] = (for (morphism <- morphisms) yield {
-    val equalities = morphismEqualities.filter(_.morphisms.exists(m => morphism == m))
-    val allMorphisms = equalities.flatMap(_.morphisms).filter(m => m != morphism).toSet + morphism // Allows to add the morphism even if it does not have equalities
-    morphism -> allMorphisms
-  }).toMap
+  private val _morphismEqualitiesForEachMorphism: ParMap[ObjectsIndex, Map[Morphism, Set[Morphism]]] =
+    (for ((index, allMorphisms) <- morphisms.groupMap(m => ObjectsIndex(m.domain, m.codomain))(m => m).par) yield {
+      index -> {
+        for (morphism <- allMorphisms) yield {
+          val equalities = morphismEqualities.getOrElse(ObjectsIndex(morphism.domain, morphism.codomain), List[MorphismEquality]()).filter(_.morphisms.exists(m => morphism == m))
+          val allEqualMorphisms = equalities.flatMap(_.morphisms).filter(m => m != morphism).toSet + morphism // Allows to add the morphism even if it does not have equalities
+          morphism -> allEqualMorphisms
+        }
+      }.toMap
+    })
   /**
    * For each composition, gets all the equal morphisms (including itself).
    */
-  private val _morphismEqualitiesForEachComposition: List[(MorphismComposition, Set[Morphism])] = (for (morphism <- morphismEqualities.flatMap(_.morphisms).toSet if morphism.isInstanceOf[MorphismComposition]) yield {
-    val equalities = morphismEqualities.filter(_.morphisms.exists(m => morphism == m))
-    val allMorphisms = equalities.flatMap(_.morphisms).filter(m => m != morphism).toSet + morphism // Allows to add the morphism even if it does not have equalities
-    (morphism.asInstanceOf[MorphismComposition], allMorphisms)
-  }).toList
+  private val _morphismEqualitiesForEachComposition: ParMap[ObjectsIndex, List[(MorphismComposition, Set[Morphism])]] =
+      (for ((index, allMorphismsEqualities) <- morphismEqualities.par) yield {
+        index -> {
+          for (morphism <- allMorphismsEqualities.flatMap(_.morphisms).toSet if morphism.isInstanceOf[MorphismComposition]) yield {
+            val equalities = morphismEqualities.getOrElse(ObjectsIndex(morphism.domain, morphism.codomain), List[MorphismEquality]()).filter(_.morphisms.exists(m => morphism == m))
+            val allEqualMorphisms = equalities.flatMap(_.morphisms).filter(m => m != morphism).toSet + morphism // Allows to add the morphism even if it does not have equalities
+            (morphism.asInstanceOf[MorphismComposition], allEqualMorphisms)
+          }
+        }.toList
+      })
+
   /**
    * For each morphism, gets all the equal morphisms by transitivity (including itself).
    */
-  val morphismEqualitiesForEachMorphism: Map[Morphism, Set[Morphism]] = {
-    var tmpResult = for ((morphism, allMorphisms) <- _morphismEqualitiesForEachMorphism) yield {
-      morphism -> (for (m <- allMorphisms) yield {
-        m match
-          case composition: MorphismComposition => _morphismEqualitiesForEachComposition.filter(_._1 == composition).head._2
-          case _ => _morphismEqualitiesForEachMorphism(m)
-      }).flatten.concat(allMorphisms)
-    }
-    var change = true
-    var previousSize: Map[Morphism, Int] = tmpResult.map(e => e._1 -> e._2.size)
-    while (change) {
-      tmpResult = for ((morphism, allMorphisms) <- tmpResult) yield {
+  val morphismEqualitiesForEachMorphism: ParMap[ObjectsIndex, Map[Morphism, Set[Morphism]]] = {
+    var previousSize: ParMap[Morphism, Int] = _morphismEqualitiesForEachMorphism.flatMap(_._2).map(e => e._1 -> e._2.size)
+    var tmpResult = for ((index, value) <- _morphismEqualitiesForEachMorphism) yield {
+      index -> {for ((morphism, allMorphisms) <- value) yield {
         morphism -> (for (m <- allMorphisms) yield {
           m match
-            case composition: MorphismComposition => _morphismEqualitiesForEachComposition.filter(_._1 == composition).head._2
-            case _ => _morphismEqualitiesForEachMorphism(m)
+            case composition: MorphismComposition => _morphismEqualitiesForEachComposition(index).filter(_._1 == composition).head._2
+            case _ => _morphismEqualitiesForEachMorphism(index)(m)
         }).flatten.concat(allMorphisms)
+      }}
+    }
+    var change = !previousSize.forall((k, v) => v == tmpResult(ObjectsIndex(k.domain, k.codomain))(k).size)
+    previousSize = tmpResult.flatMap(_._2).map(e => e._1 -> e._2.size)
+    while (change) {
+      tmpResult = for ((index, value) <- tmpResult) yield {
+        index -> {
+          for ((morphism, allMorphisms) <- value) yield {
+            morphism -> (for (m <- allMorphisms) yield {
+              m match
+                case composition: MorphismComposition => _morphismEqualitiesForEachComposition(index).filter(_._1 == composition).head._2
+                case _ => _morphismEqualitiesForEachMorphism(index)(m)
+            }).flatten.concat(allMorphisms)
+          }
+        }
       }
-      change = !previousSize.forall((k, v) => v == tmpResult(k).size)
-      previousSize = tmpResult.map(e => e._1 -> e._2.size)
+      change = !previousSize.forall((k, v) => v == tmpResult(ObjectsIndex(k.domain, k.codomain))(k).size)
+      previousSize = tmpResult.flatMap(_._2).map(e => e._1 -> e._2.size)
     }
     tmpResult
   }
@@ -92,37 +116,48 @@ class Category private[core] (val name: String,
   /**
    * For each composition, gets all the equal morphisms by transitivity (including itself).
    */
-  val morphismEqualitiesForEachComposition: List[(MorphismComposition, Set[Morphism])] = {
-    var tmpResult = (for ((morphism, allMorphisms) <- _morphismEqualitiesForEachComposition) yield {
-      morphism -> (for (m <- allMorphisms) yield {
-        m match
-          case composition: MorphismComposition => _morphismEqualitiesForEachComposition.filter(_._1 == composition).head._2
-          case _ => _morphismEqualitiesForEachMorphism(m)
-      }).flatten.concat(allMorphisms)
-    }).toMap
-    var change = true
-    var previousSize: Map[MorphismComposition, Int] = tmpResult.map(e => e._1 -> e._2.size)
-    while (change) {
-      tmpResult = for ((morphism, allMorphisms) <- tmpResult) yield {
-        morphism -> (for (m <- allMorphisms) yield {
-          m match
-            case composition: MorphismComposition => _morphismEqualitiesForEachComposition.filter(_._1 == composition).head._2
-            case _ => _morphismEqualitiesForEachMorphism(m)
-        }).flatten.concat(allMorphisms)
-      }
-      change = !previousSize.forall((k, v) => v == tmpResult(k).size)
-      previousSize = tmpResult.map(e => e._1 -> e._2.size)
+  val morphismEqualitiesForEachComposition: ParMap[ObjectsIndex, List[(MorphismComposition, Set[Morphism])]] = {
+    var previousSize: ParMap[MorphismComposition, Int] = _morphismEqualitiesForEachComposition.flatMap(_._2).map(e => e._1 -> e._2.size)
+    var tmpResult = for ((index, value) <- _morphismEqualitiesForEachComposition) yield {
+      index -> {
+        for ((morphism, allMorphisms) <- value) yield {
+          morphism -> (for (m <- allMorphisms) yield {
+            m match
+              case composition: MorphismComposition => _morphismEqualitiesForEachComposition(index).filter(_._1 == composition).head._2
+              case _ => _morphismEqualitiesForEachMorphism(index)(m)
+          }).flatten.concat(allMorphisms)
+        }
+      }.toMap
     }
-    tmpResult.toList
+    var change = !previousSize.forall((k, v) => v == tmpResult(ObjectsIndex(k.domain, k.codomain))(k).size)
+    previousSize = tmpResult.flatMap(_._2).map(e => e._1 -> e._2.size)
+    while (change) {
+      tmpResult = for ((index, value) <- tmpResult) yield {
+        index -> {
+          for ((morphism, allMorphisms) <- value) yield {
+            morphism -> (for (m <- allMorphisms) yield {
+              m match
+                case composition: MorphismComposition => _morphismEqualitiesForEachComposition(index).filter(_._1 == composition).head._2
+                case _ => _morphismEqualitiesForEachMorphism(index)(m)
+            }).flatten.concat(allMorphisms)
+          }
+        }
+      }
+      change = !previousSize.forall((k, v) => v == tmpResult(ObjectsIndex(k.domain, k.codomain))(k).size)
+      previousSize = tmpResult.flatMap(_._2).map(e => e._1 -> e._2.size)
+    }
+    tmpResult.map((k, v) => k -> v.toList)
   }
 
   // Used for caching.
   private var paths: Map[(Object, Object), List[Morphism]] = Map[(Object, Object), List[Morphism]]()
 
-  require(limits.forall(l => l.isValid(this)), "All the limits must be valid in the category.")
-  require(colimits.forall(cl => cl.isValid(this)), "All the colimits must be valid in the category.")
-  require(limits.forall(l => l.respectsUniversalProperty(this)), "All the limits must respect the universal property in the category.")
-  require(colimits.forall(cl => cl.respectsUniversalProperty(this)), "All the colimits must respect the universal property in the category.")
+  if (!Config.disableRequire) {
+    require(limits.forall(l => l.isValid(this)), "All the limits must be valid in the category.")
+    require(colimits.forall(cl => cl.isValid(this)), "All the colimits must be valid in the category.")
+    require(limits.forall(l => l.respectsUniversalProperty(this)), "All the limits must respect the universal property in the category.")
+    require(colimits.forall(cl => cl.respectsUniversalProperty(this)), "All the colimits must respect the universal property in the category.")
+  }
 
   /**
    * Returns true if the two morphisms are equal, according to the property of category and the defined equalities.
@@ -142,26 +177,30 @@ class Category private[core] (val name: String,
       if (morphism1 == morphism2) { // If they are the same morphism
         true
       } else {
-        if (morphismEqualitiesForEachMorphism.contains(morphism1)) { // If the equality has been defined
-          morphismEqualitiesForEachMorphism(morphism1).exists(_ == morphism2)
+        val indexMorphism1 = ObjectsIndex(morphism1.domain, morphism1.codomain)
+        if (morphismEqualitiesForEachMorphism.contains(indexMorphism1) && morphismEqualitiesForEachMorphism(indexMorphism1).contains(morphism1)) { // If the equality has been defined
+          morphismEqualitiesForEachMorphism(indexMorphism1)(morphism1).contains(morphism2)
         } else {
           morphism1 match
             case composition: MorphismComposition => { // If the first morphism is a composition
-              if (morphismEqualitiesForEachComposition.exists(_._1 == composition)) {
-                morphismEqualitiesForEachComposition.filter(_._1 == composition).head._2.exists(_ == morphism2)
+              val indexComposition = ObjectsIndex(composition.domain, composition.codomain)
+              if (morphismEqualitiesForEachComposition.contains(indexComposition) && morphismEqualitiesForEachComposition(indexComposition).exists(_._1 == composition)) {
+                morphismEqualitiesForEachComposition(indexComposition).filter(_._1 == composition).head._2.contains(morphism2)
               } else {
                 val chainOfMorphismsWithoutIdentities = composition.chainOfMorphisms.filter(!_.isInstanceOf[IdentityMorphism])
                 if (chainOfMorphismsWithoutIdentities.size == 1) {
-                  if (morphismEqualitiesForEachMorphism.contains(chainOfMorphismsWithoutIdentities.head)) { // If the equality has been defined
-                    morphismEqualitiesForEachMorphism(chainOfMorphismsWithoutIdentities.head).exists(_ == morphism2)
+                  val indexChainOfMorphismsWithoutIdentitiesHead = ObjectsIndex(chainOfMorphismsWithoutIdentities.head.domain, chainOfMorphismsWithoutIdentities.head.codomain)
+                  if (morphismEqualitiesForEachMorphism.contains(indexChainOfMorphismsWithoutIdentitiesHead) && morphismEqualitiesForEachMorphism(indexChainOfMorphismsWithoutIdentitiesHead).contains(chainOfMorphismsWithoutIdentities.head)) { // If the equality has been defined
+                    morphismEqualitiesForEachMorphism(indexChainOfMorphismsWithoutIdentitiesHead)(chainOfMorphismsWithoutIdentities.head).contains(morphism2)
                   } else {
                     false
                   }
                 } else {
                   if (chainOfMorphismsWithoutIdentities.isEmpty) {
                     val identity = composition.chainOfMorphisms.head
-                    if (morphismEqualitiesForEachMorphism.contains(identity)) {
-                      identity == morphism2 || morphismEqualitiesForEachMorphism(identity).exists(_ == morphism2)
+                    val indexIdentity = ObjectsIndex(identity.domain, identity.codomain)
+                    if (morphismEqualitiesForEachMorphism.contains(indexIdentity) && morphismEqualitiesForEachMorphism(indexIdentity).contains(identity)) {
+                      identity == morphism2 || morphismEqualitiesForEachMorphism(indexIdentity)(identity).contains(morphism2)
                     } else {
                       identity == morphism2
                     }
@@ -183,8 +222,8 @@ class Category private[core] (val name: String,
    * Returns true if the given morphisms form an isomorphism in this category. 
    * The two morphisms must be in this category.
    * 
-   * @param morphism: the [[Morphism]]
-   * @param inverse: the inverse of the [[Morphism]]
+   * @param morphism the [[Morphism]]
+   * @param inverse the inverse of the [[Morphism]]
    */
   def isAnIsomorphism(morphism: Morphism, inverse: Morphism): Boolean = {
     require(morphism.isInCategory(this) && inverse.isInCategory(this), "The morphisms must be in the category.")
@@ -212,7 +251,7 @@ class Category private[core] (val name: String,
   /**
    * Returns true if the morphism or the composition exists in this category.
    *
-   * @param morphism: the [[Morphism]] to search in this category.
+   * @param morphism the [[Morphism]] to search in this category.
    * @return true if the [[Morphism]] is found.
    */
   def existsMorphism(morphism: Morphism): Boolean = {
@@ -226,8 +265,8 @@ class Category private[core] (val name: String,
    * Returns true if at least one morphism exists between the [[Object]] from and the [[Object]] to, whether it is a
    * composition or not.
    *
-   * @param from : the domain [[Object]] of the morphism.
-   * @param to   : the codomain [[Object]] of the morphism.
+   * @param from the domain [[Object]] of the morphism.
+   * @param to   the codomain [[Object]] of the morphism.
    * @return true if a morphism exists, false otherwise.
    */
   def existsMorphism(from: Object, to: Object): Boolean = {
@@ -239,8 +278,8 @@ class Category private[core] (val name: String,
    * Returns the morphisms between the [[Object]] from and the [[Object]] to, whether they are a
    * composition or not (the morphisms are not repeated in the composition).
    *
-   * @param from : the domain [[Object]] of the morphism.
-   * @param to   : the codomain [[Object]] of the morphism.
+   * @param from the domain [[Object]] of the morphism.
+   * @param to   the codomain [[Object]] of the morphism.
    * @return the list of morphisms.
    */
   def getMorphisms(from: Object, to: Object): List[Morphism] = {
@@ -274,7 +313,7 @@ class Category private[core] (val name: String,
   /**
    * Removes the isomorphisms of a morphism composition.
    *
-   * @param morphismComposition: the [[MorphismComposition]] from which to remove isomorphisms.
+   * @param morphismComposition the [[MorphismComposition]] from which to remove isomorphisms.
    * @return a [[Morphism]] corresponding to the identity morphism if there were only isomorphisms or corresponding to
    *         the new [[Morphism]] without isomorphisms.
    */

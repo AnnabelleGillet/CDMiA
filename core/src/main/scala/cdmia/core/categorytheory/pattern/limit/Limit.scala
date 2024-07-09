@@ -11,7 +11,7 @@ import java.lang.Object as JObject
 /**
  * Represents a limit with its vertex. Each type of limit must implements this class to define their specificities.
  *
- * @param vertex : the [[categorytheory.Object]] that is the vertex of the cone of this limit.
+ * @param vertex the [[categorytheory.Object]] that is the vertex of the cone of this limit.
  */
 abstract class Limit(val vertex: categorytheory.Object, name: String = "Limit") extends Pattern(name) {
   protected val objectsToCheck: Iterable[categorytheory.Object]
@@ -21,7 +21,7 @@ abstract class Limit(val vertex: categorytheory.Object, name: String = "Limit") 
    * Check if this limit is valid within a given category. The conditions of the validity depends on
    * the type of the limit.
    *
-   * @param category : the [[Category]] in which to check the validity of this limit.
+   * @param category the [[Category]] in which to check the validity of this limit.
    * @return true is this limit is valid, false otherwise.
    */
   override def isValid(category: Category): Boolean
@@ -30,7 +30,7 @@ abstract class Limit(val vertex: categorytheory.Object, name: String = "Limit") 
    * Explain why the limit is not valid within a given category. The conditions of the validity depends on
    * the type of the limit.
    *
-   * @param category : the [[Category]] in which to check the validity of this limit.
+   * @param category the [[Category]] in which to check the validity of this limit.
    * @return a [[List]] of invalidity reasons.
    */
   override def explainIsNotValid(category: Category): List[String]
@@ -38,7 +38,7 @@ abstract class Limit(val vertex: categorytheory.Object, name: String = "Limit") 
   /**
    * Create this limit in the destination category of a functor, according to the specified object and morphism transformations.
    * 
-   * @param functor: the [[Functor]] specifying the object and morphism transformations.
+   * @param functor the [[Functor]] specifying the object and morphism transformations.
    * @return the [[Limit]] in the destination category.
    */
   override def createPatternInDestinationCategory(functor: Functor): Limit
@@ -47,7 +47,7 @@ abstract class Limit(val vertex: categorytheory.Object, name: String = "Limit") 
    * Check if this limit is preserved by the given functor. This limit must also be valid and must respect the universal 
    * property in the source category to check its preservation.
    * 
-   * @param functor: the [[Functor]] for which to check the preservation of this limit.
+   * @param functor the [[Functor]] for which to check the preservation of this limit.
    * @return true if the limit is preserved, false otherwise.
    */
   override def isPreservedByFunctor(functor: Functor): Boolean = {
@@ -62,7 +62,7 @@ abstract class Limit(val vertex: categorytheory.Object, name: String = "Limit") 
   /**
    * Create this limit in the source category of a functor, according to the specified object and morphism transformations.
    *
-   * @param functor : the [[Functor]] specifying the object and morphism transformations.
+   * @param functor the [[Functor]] specifying the object and morphism transformations.
    * @return the list of possible [[Limit]]s in the source category.
    */
   override def createPatternsInSourceCategory(functor: Functor): List[Limit]
@@ -71,7 +71,7 @@ abstract class Limit(val vertex: categorytheory.Object, name: String = "Limit") 
    * Check if this limit also exists in a source category. This limit must also be valid and must respect the universal
    * property in the destination category to check its existence.
    *
-   * @param functor : the [[Functor]] for which to check the existence of this limit.
+   * @param functor the [[Functor]] for which to check the existence of this limit.
    * @return the list of [[Limit]]s that match the given limit in the source category.
    */
   override def existsInSourceCategory(functor: Functor): List[Limit] = {
@@ -88,7 +88,7 @@ abstract class Limit(val vertex: categorytheory.Object, name: String = "Limit") 
    * vertex of the cone of the limit, there must exist a unique morphism towards the vertex of the limit with witch the
    * diagram commutes).
    *
-   * @param category: the [[Category]] in which to check the respect of the universal property.
+   * @param category the [[Category]] in which to check the respect of the universal property.
    * @return true is the universal property is respected, false otherwise.
    */
   override def respectsUniversalProperty(category: Category): Boolean = {

@@ -1,7 +1,7 @@
 package cdmia.core.categorytheory.functor
 
 import cdmia.core.categorytheory
-import cdmia.core.categorytheory.{Category, Object, ObjectTransformation}
+import cdmia.core.categorytheory.{Category, Config, Object, ObjectTransformation}
 import cdmia.core.categorytheory.morphism.{IdentityMorphism, Morphism, MorphismComposition, MorphismTransformation}
 import cdmia.core.categorytheory.pattern.colimit.Colimit
 import cdmia.core.categorytheory.pattern.limit.Limit
@@ -19,10 +19,10 @@ import cdmia.core.categorytheory.pattern.limit.Limit
  * The transformations of the identity morphisms must not be given, as they are automatically deduced from the object
  * transformations, as id_F(x) = F(id_x).
  *
- * @param domain: the source [[Category]] of this functor.
- * @param codomain: the destination [[Category]] of this functor.
- * @param objectTransformations: all the transformations of objects.
- * @param morphismTransformations: the transformations for the morphisms that are not identity morphisms.
+ * @param domain the source [[Category]] of this functor.
+ * @param codomain the destination [[Category]] of this functor.
+ * @param objectTransformations all the transformations of objects.
+ * @param morphismTransformations the transformations for the morphisms that are not identity morphisms.
  */
 class Functor(val name: String,
               val domain: Category,
@@ -35,34 +35,46 @@ class Functor(val name: String,
    */
   val identityMorphismTransformations: Iterable[MorphismTransformation] = objectTransformations.map(_.identityMorphismTransformation)
 
-  require(objectTransformations.map(_.source).forall(_.isInCategory(domain)),
-    "All the source objects of the object transformations must be in the domain category.")
-  require(objectTransformations.map(_.destination).forall(_.isInCategory(codomain)),
-    "All the destination objects of the object transformations must be in the codomain category.")
-  require(morphismTransformations.map(_.source).forall(_.isInCategory(domain)),
-    "All the source morphisms of the morphism transformations must be in the domain category.")
-  require(morphismTransformations.map(_.destination).forall(_.isInCategory(codomain)),
-    "All the destination morphisms of the morphism transformations must be in the codomain category.")
-  require(objectTransformations.map(_.source).toSet.size == domain.objects.size, // We already checked that all source objects are in the domain category
-    "All objects of the source category must be transformed exactly once.")
-  require(morphismTransformations.map(_.source).toSet.size == domain.morphisms.size, // We already checked that all source morphisms are in the domain category
-    "All morphisms of the source category must be transformed exactly once.")
-  private val failedTransformations = morphismTransformations.filterNot(mt => objectTransformations.exists(ot => mt.source.domain == ot.source && mt.destination.domain == ot.destination) &&
-    objectTransformations.exists(ot => mt.source.codomain == ot.source && mt.destination.codomain == ot.destination))
-  require(failedTransformations.isEmpty,
-    s"The morphism transformation must match the object transformations, i.e, F(x -> y) = F(x) -> F(y), but got:\n\t${failedTransformations.map(mt => s"F(x -> y) = ${mt.source} -> ${mt.destination} and F(x) = ${objectTransformations.filter(_.source == mt.source.domain).head.destination}, F(y) = ${objectTransformations.filter(_.source == mt.source.codomain).head.destination}").mkString("\n\t")}.")
-  require(!morphismTransformations.map(_.source).exists(_.isInstanceOf[IdentityMorphism]),
-    "The identity morphism transformations are automatically computed and should not be given.")
+  if (!Config.disableRequire) {
+    require(objectTransformations.map(_.source).forall(_.isInCategory(domain)),
+      "All the source objects of the object transformations must be in the domain category.")
+    require(objectTransformations.map(_.destination).forall(_.isInCategory(codomain)),
+      "All the destination objects of the object transformations must be in the codomain category.")
+    require(morphismTransformations.map(_.source).forall(_.isInCategory(domain)),
+      "All the source morphisms of the morphism transformations must be in the domain category.")
+    require(morphismTransformations.map(_.destination).forall(_.isInCategory(codomain)),
+      "All the destination morphisms of the morphism transformations must be in the codomain category.")
+    require(objectTransformations.map(_.source).toSet.size == domain.objects.size, // We already checked that all source objects are in the domain category
+      "All objects of the source category must be transformed exactly once.")
+    require(morphismTransformations.map(_.source).toSet.size == domain.morphisms.size, // We already checked that all source morphisms are in the domain category
+      "All morphisms of the source category must be transformed exactly once.")
+    val failedTransformations = morphismTransformations.filterNot(mt => objectTransformations.exists(ot => mt.source.domain == ot.source && mt.destination.domain == ot.destination) &&
+      objectTransformations.exists(ot => mt.source.codomain == ot.source && mt.destination.codomain == ot.destination))
+    require(failedTransformations.isEmpty,
+      s"The morphism transformation must match the object transformations, i.e, F(x -> y) = F(x) -> F(y), but got:\n\t${failedTransformations.map(mt => s"F(x -> y) = ${mt.source} -> ${mt.destination} and F(x) = ${objectTransformations.filter(_.source == mt.source.domain).head.destination}, F(y) = ${objectTransformations.filter(_.source == mt.source.codomain).head.destination}").mkString("\n\t")}.")
+    require(!morphismTransformations.map(_.source).exists(_.isInstanceOf[IdentityMorphism]),
+      "The identity morphism transformations are automatically computed and should not be given.")
+  }
 
   /**
    * Indicates if this functor respects the functorial law (i.e., F(g o f) = F(g) o F(f) and F(id_x) = id_F(x)).
    */
-  val respectFunctorialLaw: Boolean = {
+  /*val respectFunctorialLaw: Boolean = {
     var respect = true
     for ((morphism, equalities) <- domain.morphismEqualitiesForEachMorphism if respect) {
       respect &&= equalities.forall(equality => codomain.areEqual(getDestinationMorphism(morphism), getDestinationMorphism(equality)))
     }
     for ((morphism, equalities) <- domain.morphismEqualitiesForEachComposition if respect) {
+      respect &&= equalities.forall(equality => codomain.areEqual(getDestinationMorphism(morphism), getDestinationMorphism(equality)))
+    }
+    respect
+  }*/
+  val respectFunctorialLaw: Boolean = {
+    var respect = true
+    for ((index, morphismEqualities) <- domain.morphismEqualitiesForEachMorphism; (morphism, equalities) <- morphismEqualities if respect) {
+      respect &&= equalities.forall(equality => codomain.areEqual(getDestinationMorphism(morphism), getDestinationMorphism(equality)))
+    }
+    for ((index, morphismEqualities) <- domain.morphismEqualitiesForEachComposition; (morphism, equalities) <- morphismEqualities if respect) {
       respect &&= equalities.forall(equality => codomain.areEqual(getDestinationMorphism(morphism), getDestinationMorphism(equality)))
     }
     respect
@@ -121,7 +133,7 @@ class Functor(val name: String,
   /**
    * Returns the [[Functor]] composition of this functor and the given functor.
    *
-   * @param functor : the [[Functor]] with which to perform the composition.
+   * @param functor the [[Functor]] with which to perform the composition.
    * @return the resulting [[Functor]].
    */
   def composeWith(functor: Functor): Functor = {
@@ -134,7 +146,7 @@ class Functor(val name: String,
   /**
    * Returns the [[Functor]] composition of this functor and the given functor.
    *
-   * @param functor : the [[Functor]] with which to perform the composition.
+   * @param functor the [[Functor]] with which to perform the composition.
    * @return the resulting [[Functor]].
    */
   def o(functor: Functor): Functor =
@@ -143,7 +155,7 @@ class Functor(val name: String,
   /**
    * Returns the [[Functor]] composition of this functor and the given functor.
    *
-   * @param functor : the [[Functor]] with which to perform the composition.
+   * @param functor the [[Functor]] with which to perform the composition.
    * @return the resulting [[Functor]].
    */
   def ○(functor: Functor): Functor =

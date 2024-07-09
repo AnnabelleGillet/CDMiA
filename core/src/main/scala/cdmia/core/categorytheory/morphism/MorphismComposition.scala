@@ -7,8 +7,8 @@ import cdmia.core.categorytheory.Category
  * A composition is valid only if the object codomain of the first morphism is the same object as the domain of the
  * second morphism.
  *
- * @param first: the first [[Morphism]] of this composition (second ○ first).
- * @param second: the second [[Morphism]] of this composition (second ○ first).
+ * @param first the first [[Morphism]] of this composition (second ○ first).
+ * @param second the second [[Morphism]] of this composition (second ○ first).
  */
 class MorphismComposition(val first: Morphism, val second: Morphism) extends Morphism(s"${second.name} ○ ${first.name}", first.domain, second.codomain) {
   require(first.codomain == second.domain, "The codomain of the first morphism must be the same as the domain of the second morphism to be composed.")
@@ -32,7 +32,7 @@ class MorphismComposition(val first: Morphism, val second: Morphism) extends Mor
    * that are neutral elements in a composition. 
    * If this composition has only a morphism and one or several identity morphisms, it is equal to this morphism.
    * 
-   * @param obj: the other objet with which testing the equality.
+   * @param obj the other objet with which testing the equality.
    * @return true if both morphisms are equal, false otherwise.
    */
   override def equals(obj: Any): Boolean = {

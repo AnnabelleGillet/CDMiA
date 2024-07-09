@@ -5,7 +5,7 @@ import cdmia.core.categorytheory.morphism.IdentityMorphism
 /**
  * An object to be used in a category.
  *
- * @param name: the name of this object.
+ * @param name the name of this object.
  */
 class Object(val name: String) extends Serializable {
   /**

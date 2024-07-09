@@ -4,6 +4,7 @@ import cdmia.core.categorytheory.Object
 import cdmia.core.categorytheory.functor.Functor
 import cdmia.core.categorytheory.morphism.{Isomorphism, Morphism, MorphismComposition}
 import cdmia.core.categorytheory.pattern.Pattern
+import cdmia.datawrapper.Config
 
 /**
  * To implement to verify the need of creation of a constraint in a transformation.
@@ -22,7 +23,7 @@ sealed trait Creation(val name: String, val concernedMorphisms: List[Morphism]) 
   /**
    * Check if a functor does not validate a constraint in the destination category.
    *
-   * @param functor: the [[Functor]] with which to check the need of creation.
+   * @param functor the [[Functor]] with which to check the need of creation.
    * @return a list of [[CreationOutput]] each with concerned [[Morphism]]s and [[Object]]s, a [[Boolean]] indicating
    *         if the constraint mist be created and a [[String]] message representing a success or a failure message.
    */
@@ -32,7 +33,7 @@ sealed trait Creation(val name: String, val concernedMorphisms: List[Morphism]) 
    * Indicates if the need for creation must be check (e.g., some morphisms or objects concerned by a creation are
    * in the destination of transformations).
    *
-   * @param functor: the [[Functor]] with which to check the need of creation.
+   * @param functor the [[Functor]] with which to check the need of creation.
    * @return true if the creation must be check, false otherwise.
    */
   def needToCheck(functor: Functor): Boolean
@@ -48,7 +49,9 @@ class IsomorphismCreation(name: String, isomorphism: Isomorphism)
   extends Creation(name, List[Morphism](isomorphism.morphism, isomorphism.inverse)) {
 
   override def checkCreation(functor: Functor): List[CreationOutput] = {
-    require(functor.codomain.isAnIsomorphism(isomorphism.morphism, isomorphism.inverse), "The isomorphism must exist in the destination category.")
+    if (!Config.disableRequire) {
+      require(functor.codomain.isAnIsomorphism(isomorphism.morphism, isomorphism.inverse), "The isomorphism must exist in the destination category.")
+    }
 
     val sourceMorphisms: List[Morphism] = functor.getSourceMorphisms(isomorphism.morphism) ::: functor.morphismTransformations.filter(_.destination.isInstanceOf[MorphismComposition]).filter(mt => {
       mt.destination.asInstanceOf[MorphismComposition].chainOfMorphisms.contains(isomorphism.morphism)
@@ -97,23 +100,28 @@ class PatternCreation(name: String, pattern: Pattern, objectsToCheck: List[Objec
   extends Creation(name, pattern.getMorphisms) {
 
   override def checkCreation(functor: Functor): List[CreationOutput] = {
-    require(pattern.isValid(functor.codomain), "The pattern must be valid in the destination category.")
-    require(pattern.respectsUniversalProperty(functor.codomain), "The pattern must respect the universal property in the destination category.")
+    if (!Config.disableRequire) {
+      require(pattern.isValid(functor.codomain), "The pattern must be valid in the destination category.")
+      require(pattern.respectsUniversalProperty(functor.codomain), "The pattern must respect the universal property in the destination category.")
+    }
 
     val sourcePatterns = pattern.createPatternsInSourceCategory(functor).filter(p => {
       p.getObjects.filter(_.isInCategory(functor.domain)).map(functor.getDestinationObject).exists(objectsToCheck.contains(_)) ||
-        p.getMorphisms.filter(_.isInCategory(functor.domain)).map(functor.getDestinationMorphism).exists(morphismsToCheck.contains(_))
+        p.getMorphisms.filter(_.isInCategory(functor.domain)).map(functor.getDestinationMorphism).exists(m => {
+          morphismsToCheck.contains(m) ||
+            (m.isInstanceOf[MorphismComposition] && morphismsToCheck.exists(mtc => m.asInstanceOf[MorphismComposition].chainOfMorphisms.contains(mtc)))
+        })
     })
 
-    for (pattern <- sourcePatterns) yield {
-      if (pattern.isValid(functor.domain)) {
-        if (pattern.respectsUniversalProperty(functor.domain)) {
-          CreationOutput(pattern.getObjects, pattern.getMorphisms, true, s"$name does not need creation: the pattern exists in the source category.")
+    for (sourcePattern <- sourcePatterns) yield {
+      if (sourcePattern.isValid(functor.domain)) {
+        if (sourcePattern.respectsUniversalProperty(functor.domain)) {
+          CreationOutput(sourcePattern.getObjects, sourcePattern.getMorphisms, true, s"$name does not need creation: the pattern exists in the source category.")
         } else {
-          CreationOutput(pattern.getObjects, pattern.getMorphisms, false, s"$name must be created: the pattern does not respect the universal property in the source category.")
+          CreationOutput(sourcePattern.getObjects, sourcePattern.getMorphisms, false, s"$name must be created: the pattern does not respect the universal property in the source category.")
         }
       } else {
-        CreationOutput(pattern.getObjects, pattern.getMorphisms, false, s"$name must be created: the pattern is not valid in the source category for the following reasons:\n\t${pattern.explainIsNotValid(functor.domain).mkString("\n\t")}")
+        CreationOutput(sourcePattern.getObjects, sourcePattern.getMorphisms, false, s"$name must be created: the pattern is not valid in the source category for the following reasons:\n\t${sourcePattern.explainIsNotValid(functor.domain).mkString("\n\t")}")
       }
     }
   }

@@ -2,7 +2,7 @@ package cdmia.datawrapper.model.hierarchical
 
 import cdmia.datawrapper.model.Model
 import cdmia.core.categorytheory.{Category, CategoryBuilder, Object, ObjectTransformation}
-import cdmia.core.categorytheory.morphism.{Morphism, MorphismTransformation}
+import cdmia.core.categorytheory.morphism.{Morphism, MorphismEquality, MorphismTransformation}
 
 /**
  * Categorical representation of the JSON model.
@@ -28,14 +28,16 @@ object JSONModel extends Model("JSON Model") {
    */
   val jsonObject: Morphism = new Morphism("object", document, document)
   val arrayAttribute: Morphism = new Morphism("array_attribute", document, array)
-  val arrayContent: Morphism = new Morphism("array_content", array, document)
+  val arrayContent: Morphism = new Morphism("array_content", array, array)
+  val documentContent: Morphism = new Morphism("document_content", array, document)
+  val attributeContent: Morphism = new Morphism("attribute_content", array, typedAttribute)
   val attribute: Morphism = new Morphism("attribute", document, typedAttribute)
   val numberType: Morphism = new Morphism("number_type", typedAttribute, number)
   val stringType: Morphism = new Morphism("string_type", typedAttribute, string)
   val booleanType: Morphism = new Morphism("boolean_type", typedAttribute, boolean)
 
   override val morphisms: Iterable[Morphism] = List[Morphism](
-    jsonObject, arrayAttribute, arrayContent, attribute,
+    jsonObject, arrayAttribute, arrayContent, documentContent, attributeContent, attribute,
     numberType, stringType, booleanType
   )
 
@@ -84,9 +86,9 @@ object JSONModel extends Model("JSON Model") {
 
   private def getAttributeMorphismOfModel(dataType: DataType): Morphism = {
     dataType match
-      case NumberType => JSONModel.numberType o JSONModel.attribute
-      case StringType => JSONModel.stringType o JSONModel.attribute
-      case BooleanType => JSONModel.booleanType o JSONModel.attribute
+      case NumberType => JSONModel.numberType
+      case StringType => JSONModel.stringType
+      case BooleanType => JSONModel.booleanType
   }
 
   /**
@@ -108,11 +110,13 @@ object JSONModel extends Model("JSON Model") {
    * @param name
    * @param insideDocument
    */
-  class NestedDocument(name: String, val insideDocument: Document) extends Document(name) {
-    val objectMorphism: Morphism = new Morphism(s"${name}_nested", insideDocument.obj, this.obj)
+  class NestedDocument(val insideDocument: Document, name: String, val nestedDocument: Document) extends Document(name) {
+    val objectMorphism: Morphism = new Morphism(s"${name}", insideDocument.obj, nestedDocument.obj)
 
+    override val objects: List[Object] = List[Object]()
     override val morphisms: List[Morphism] = List[Morphism](objectMorphism)
 
+    override val objectTransformations: List[ObjectTransformation] = List[ObjectTransformation]()
     override val morphismTransformations: List[MorphismTransformation] = List[MorphismTransformation](objectMorphism ~> JSONModel.jsonObject)
   }
 
@@ -121,7 +125,7 @@ object JSONModel extends Model("JSON Model") {
    */
   class Attribute(name: String, val document: Document, val dataType: DataType) extends JSONModelElement(name) {
     val attributeMorphism: Morphism = new Morphism(name, document.obj, dataType.obj)
-    val modelAttributeMorphism: Morphism = getAttributeMorphismOfModel(dataType)
+    val modelAttributeMorphism: Morphism = getAttributeMorphismOfModel(dataType) o JSONModel.attribute
 
     override val morphisms: List[Morphism] = List[Morphism](attributeMorphism)
 
@@ -146,19 +150,27 @@ object JSONModel extends Model("JSON Model") {
     val morphism: Morphism
   }
 
-  class ArrayContentObject(array: ArrayAttribute, val document: Document) extends ArrayContent(array) {
-    override val morphism: Morphism = new Morphism(s"${array.name}_contains_object_${document.name}", array.obj, document.obj)
+  class DocumentArrayContent(array: ArrayAttribute, val document: Document) extends ArrayContent(array) {
+    override val morphism: Morphism = new Morphism(s"${array.name}_contains_document_${document.name}", array.obj, document.obj)
 
     override val morphisms: List[Morphism] = List[Morphism](morphism)
 
-    override val morphismTransformations: List[MorphismTransformation] = List[MorphismTransformation](morphism ~> JSONModel.arrayContent)
+    override val morphismTransformations: List[MorphismTransformation] = List[MorphismTransformation](morphism ~> JSONModel.documentContent)
   }
 
-  class ArrayContentDataType(array: ArrayAttribute, val dataType: DataType) extends ArrayContent(array) {
+  class AttributeArrayContent(array: ArrayAttribute, val dataType: DataType) extends ArrayContent(array) {
     override val morphism: Morphism = new Morphism(s"${array.name}_contains_data_type_${dataType.name}", array.obj, dataType.obj)
 
     override val morphisms: List[Morphism] = List[Morphism](morphism)
 
-    override val morphismTransformations: List[MorphismTransformation] = List[MorphismTransformation](morphism ~> (getAttributeMorphismOfModel(dataType) o JSONModel.arrayContent))
+    override val morphismTransformations: List[MorphismTransformation] = List[MorphismTransformation](morphism ~> (getAttributeMorphismOfModel(dataType) o JSONModel.attributeContent))
+  }
+
+  class ArrayArrayContent(array: ArrayAttribute, arrayContent: ArrayAttribute) extends ArrayContent(array) {
+    override val morphism: Morphism = new Morphism(s"${array.name}_contains_array_${arrayContent.name}", array.obj, arrayContent.obj)
+
+    override val morphisms: List[Morphism] = List[Morphism](morphism)
+
+    override val morphismTransformations: List[MorphismTransformation] = List[MorphismTransformation](morphism ~> JSONModel.arrayContent)
   }
 }
