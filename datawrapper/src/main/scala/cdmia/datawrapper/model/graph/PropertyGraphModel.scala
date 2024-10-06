@@ -15,7 +15,6 @@ object PropertyGraphModel extends Model("Property graph Model") {
    */
   val vertex: Object = new Object("vertex")
   val edge: Object = new Object("edge")
-  val edgeConstraint: Object = new Object("edge_constraint")
   val typedAttribute: Object = new Object("typed_attribute")
   val label: Object = new Object("label")
   val number: Object = new Object("number")
@@ -24,7 +23,7 @@ object PropertyGraphModel extends Model("Property graph Model") {
   val date: Object = new Object("date")
 
   override val objects: Iterable[Object] = List[Object](
-    vertex, edge, edgeConstraint, label,
+    vertex, edge, label,
     typedAttribute, number, string, boolean, date
   )
 
@@ -41,23 +40,17 @@ object PropertyGraphModel extends Model("Property graph Model") {
   val dateType: Morphism = new Morphism("date_type", typedAttribute, date)
   val vertexLabel: Morphism = new Morphism("vertex_label", vertex, label)
   val edgeLabel: Morphism = new Morphism("edge_label", edge, label)
-  val edgeEC: Morphism = new Morphism("edge_ec", edgeConstraint, edge)
-  val inEC: Morphism = new Morphism("in_ec", edgeConstraint, vertex)
-  val outEC: Morphism = new Morphism("out_ec", edgeConstraint, vertex)
 
   override val morphisms: Iterable[Morphism] = List[Morphism](
     in, out, vertexAttribute, edgeAttribute,
     numberType, stringType, booleanType, dateType,
-    vertexLabel, edgeLabel,
-    edgeEC, inEC, outEC
+    vertexLabel, edgeLabel
   )
 
   /*
   Constraints
    */
-  val edgeProduct: Product = new Product(edgeConstraint, List[Object](edgeConstraint, edge, vertex), List[Morphism](edgeConstraint.identityMorphism, edgeEC, inEC, outEC), "edge_product")
-  val inEquality: MorphismEquality = new MorphismEquality(List(inEC, in o edgeEC))
-  val outEquality: MorphismEquality = new MorphismEquality(List(inEC, in o edgeEC))
+  val edgeProduct: Product = new Product(edge, List[Object](edge, vertex), List[Morphism](edge.identityMorphism, in, out), "edge_product")
 
   /*
   Preservations
@@ -70,14 +63,13 @@ object PropertyGraphModel extends Model("Property graph Model") {
   Creations
    */
   override val creationVerifications: List[Creation] = List[Creation](
-    new PatternCreation("Edge product", edgeProduct, List[Object](edge, edgeConstraint), List[Morphism](in, out, inEC, outEC, edgeEC, edge.identityMorphism))
+    new PatternCreation("Edge product", edgeProduct, List[Object](edge), List[Morphism](in, out, edge.identityMorphism))
   )
 
   /*
   Category
    */
   override val category: Category = CategoryBuilder(this.name, objects, morphisms)
-    .withMorphismEqualities(List(inEquality, outEquality))
     .build(List[Limit](edgeProduct))
 
   /*
@@ -109,24 +101,19 @@ object PropertyGraphModel extends Model("Property graph Model") {
     val obj: Object = new Object(name)
     val inMorphism: Morphism = new Morphism(s"${name}_in", obj, in.obj)
     val outMorphism: Morphism = new Morphism(s"${name}_out", obj, out.obj)
-
-    val edgeConstraint: Object = new Object(s"${name}_constraint")
-    val edgeEC: Morphism = new Morphism(s"${name}_edge_ec", this.edgeConstraint, obj)
-    val inEC: Morphism = new Morphism(s"${name}_in_ec", this.edgeConstraint, in.obj)
-    val outEC: Morphism = new Morphism(s"${name}_out_ec", this.edgeConstraint, out.obj)
     
-    val product: Product = new Product(this.edgeConstraint, List[Object](this.edgeConstraint, obj, in.obj, out.obj).distinct, List[Morphism](this.edgeConstraint.identityMorphism, this.edgeEC, this.inEC, this.outEC), s"${name}_edge_product")
-
-    override val objects: List[Object] = List[Object](obj, this.edgeConstraint)
-    override val morphisms: List[Morphism] = List[Morphism](inMorphism, outMorphism, edgeEC, inEC, outEC)
+    val product: Product = new Product(this.obj, List[Object](obj, in.obj, out.obj).distinct, List[Morphism](this.obj.identityMorphism, this.inMorphism, this.outMorphism), s"${name}_edge_product")
+    
+    override val objects: List[Object] = List[Object](obj)
+    override val morphisms: List[Morphism] = List[Morphism](inMorphism, outMorphism)
 
     override val limits: List[Limit] = List[Limit](product)
-    override val pathEqualities: List[MorphismEquality] = List[MorphismEquality](new MorphismEquality(List(this.inEC, inMorphism o this.edgeEC)), new MorphismEquality(List(this.outEC, outMorphism o this.edgeEC)))
 
-    override val objectTransformations: List[ObjectTransformation] = List[ObjectTransformation](obj ~> PropertyGraphModel.edge, this.edgeConstraint ~> PropertyGraphModel.edgeConstraint)
+    override val objectTransformations: List[ObjectTransformation] = List[ObjectTransformation](
+      obj ~> PropertyGraphModel.edge
+    )
     override val morphismTransformations: List[MorphismTransformation] = List[MorphismTransformation](
-      inMorphism ~> PropertyGraphModel.in, outMorphism ~> PropertyGraphModel.out,
-      this.edgeEC ~> PropertyGraphModel.edgeEC, this.inEC ~> PropertyGraphModel.inEC, this.outEC ~> PropertyGraphModel.outEC
+      inMorphism ~> PropertyGraphModel.in, outMorphism ~> PropertyGraphModel.out
     )
 
     override val preservationVerifications: List[Preservation] = List[Preservation](new PatternPreservation(s"Edge $name product", product))
