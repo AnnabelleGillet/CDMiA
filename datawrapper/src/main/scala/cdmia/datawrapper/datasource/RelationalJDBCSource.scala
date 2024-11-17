@@ -6,9 +6,10 @@ import cdmia.datawrapper.schema.relational.{RelationalSchema, RelationalSchemaBu
 import java.sql.{Connection, SQLException, Types as SQLTypes}
 
 /**
- * Get a schema from a PostgreSQL database.
+ * Get a schema from a relational database with JDBC.
  *
- * @param connection the PostgreSQL connection.
+ * @param schemaName the name of the schema to extract.
+ * @param connection the JDBC connection.
  */
 class RelationalJDBCSource(val schemaName: String, val connection: Connection) {
   private val metadata = connection.getMetaData

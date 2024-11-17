@@ -1,23 +1,17 @@
 package cdmia.datawrapper.datasource
 
 import cdmia.core.categorytheory.Object
-import cdmia.core.categorytheory.functor.Functor
 import cdmia.core.categorytheory.morphism.Morphism
 import cdmia.datawrapper.model.relational.RelationalModel
-import cdmia.datawrapper.model.graph.PropertyGraphModel
-import cdmia.datawrapper.modeltransformation.{SchemaModelTransformation, TemplateTransformation}
 import cdmia.datawrapper.schema.relational.RelationalSchema
 
-import java.sql.{Connection, DriverManager}
-import java.util.Properties
+import java.sql.Connection
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.funsuite.*
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 
-class RelationalJDBCSourceTest extends AnyFunSuite with BeforeAndAfterAll {
+class RelationalJDBCSourceTest extends DatasourceTest with BeforeAndAfterAll {
   var embeddedPostgres: EmbeddedPostgres = null
   var connection: Connection = null
-  case class ExpectedMorphism(name: String, domain: Object, codomain: Object)
 
   override def beforeAll(): Unit = {
     embeddedPostgres = EmbeddedPostgres.start()
@@ -415,45 +409,5 @@ class RelationalJDBCSourceTest extends AnyFunSuite with BeforeAndAfterAll {
     val startTime = System.currentTimeMillis()
     val schema = postgreSQLSource.getRelationalSchema(Some(List("testperf")), None)
     info(s"Run in ${System.currentTimeMillis() - startTime}ms")
-  }
-
-  /**
-   * Check if the obtained objects are the same as the expected objects.
-   */
-  private def checkObjects(expectedObjectNames: List[String], obtainedObjects: Map[String, Object]): Unit = {
-    assertResult(true)(expectedObjectNames.size == obtainedObjects.size)
-    assertResult(true)(expectedObjectNames.forall(obtainedObjects.contains))
-    assertResult(true)(obtainedObjects.keys.forall(expectedObjectNames.contains))
-  }
-
-  /**
-   * Check if the obtained morphisms are the same as the expected morphisms.
-   */
-  private def checkMorphisms(expectedMorphisms: List[ExpectedMorphism], obtainedMorphisms: Map[String, Morphism]): Unit = {
-    assertResult(true)(expectedMorphisms.size == obtainedMorphisms.size)
-    for (em <- expectedMorphisms) {
-      assertResult(true)(obtainedMorphisms.contains(em.name))
-      assertResult(em.name)(obtainedMorphisms(em.name).name)
-      assertResult(em.domain)(obtainedMorphisms(em.name).domain)
-      assertResult(em.codomain)(obtainedMorphisms(em.name).codomain)
-    }
-  }
-
-  /**
-   * Check if the obtained object transformations are the same as the expected object transformations.
-   */
-  private def checkObjectTransformations(functor: Functor, expectedObjectTransformations: Map[Object, Object]): Unit = {
-    for (ot <- functor.objectTransformations) {
-      assertResult(expectedObjectTransformations(ot.source))(ot.destination)
-    }
-  }
-
-  /**
-   * Check if the obtained morphism transformations are the same as the expected morphism transformations.
-   */
-  private def checkMorphismTransformations(functor: Functor, expectedMorphismTransformations: Map[Morphism, Morphism]): Unit = {
-    for (mt <- functor.morphismTransformations) {
-      assertResult(expectedMorphismTransformations(mt.source))(mt.destination)
-    }
   }
 }

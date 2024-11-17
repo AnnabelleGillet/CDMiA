@@ -31,7 +31,13 @@ lazy val datawrapper = project
   .settings(
     name := "CDMiA-datawrapper",
     libraryDependencies += "org.postgresql" % "postgresql" % "42.7.3",
+    libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % "5.26.3",
     libraryDependencies += "io.zonky.test" % "embedded-postgres" % "2.0.7" % Test,
+    libraryDependencies += "org.neo4j" % "neo4j" % "5.20.0" % Test,
+    libraryDependencies += "org.neo4j.procedure" % "apoc-core" % "5.20.0" % Test,
+    libraryDependencies += "org.neo4j.procedure" % "apoc-extended" % "5.20.0" % Test,
+    libraryDependencies += "org.neo4j.procedure" % "apoc-processor" % "5.20.0" % Test,
+    libraryDependencies += "org.neo4j.procedure" % "apoc-common" % "5.20.0" % Test,
     assemblyJarName in assembly := s"CDMiA-DataWrapper-${version.value}.jar",
   )
   .dependsOn(core)
