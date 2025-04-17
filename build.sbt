@@ -39,6 +39,13 @@ lazy val datawrapper = project
     libraryDependencies += "org.neo4j.procedure" % "apoc-processor" % "5.20.0" % Test,
     libraryDependencies += "org.neo4j.procedure" % "apoc-common" % "5.20.0" % Test,
     assemblyJarName in assembly := s"CDMiA-DataWrapper-${version.value}.jar",
+    assembly / assemblyMergeStrategy := {
+      case PathList("META-INF", xs@_*) => MergeStrategy.discard
+      case "module-info.class" => MergeStrategy.discard
+      case x =>
+        val oldStrategy = (assembly / assemblyMergeStrategy).value
+        oldStrategy(x)
+    }
   )
   .dependsOn(core)
 

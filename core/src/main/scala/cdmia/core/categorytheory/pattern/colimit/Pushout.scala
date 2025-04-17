@@ -1,7 +1,7 @@
 package cdmia.core.categorytheory.pattern.colimit
 
 import cdmia.core.categorytheory
-import cdmia.core.categorytheory.{Category, Object}
+import cdmia.core.categorytheory.{Category, Config, Object}
 import cdmia.core.categorytheory.functor.Functor
 import cdmia.core.categorytheory.morphism.{Morphism, MorphismComposition}
 
@@ -24,10 +24,12 @@ import cdmia.core.categorytheory.morphism.{Morphism, MorphismComposition}
 class Pushout(_vertex: categorytheory.Object, val a: categorytheory.Object, val b: categorytheory.Object, val c: categorytheory.Object,
               val av: Morphism, val bv: Morphism, val ca: Morphism, val cb: Morphism,
               name: String = "Pushout") extends Colimit(_vertex, name) {
-  require(av.codomain == vertex && av.domain == a, s"av must be $a -> $vertex, but got ${av.domain} -> ${av.codomain}.")
-  require(bv.codomain == vertex && bv.domain == b, s"bv must be $b -> $_vertex, but got ${bv.domain} -> ${bv.codomain}.")
-  require(ca.codomain == a && ca.domain == c, s"ca must be $c -> $a, but got ${ca.domain} -> ${ca.codomain}.")
-  require(cb.codomain == b && cb.domain == c, s"cb must be $c -> $b, but got ${cb.domain} -> ${cb.codomain}.")
+  if (!Config.disableRequire) {
+    require(av.codomain == vertex && av.domain == a, s"av must be $a -> $vertex, but got ${av.domain} -> ${av.codomain}.")
+    require(bv.codomain == vertex && bv.domain == b, s"bv must be $b -> $_vertex, but got ${bv.domain} -> ${bv.codomain}.")
+    require(ca.codomain == a && ca.domain == c, s"ca must be $c -> $a, but got ${ca.domain} -> ${ca.codomain}.")
+    require(cb.codomain == b && cb.domain == c, s"cb must be $c -> $b, but got ${cb.domain} -> ${cb.codomain}.")  
+  }
 
   override protected val objectsToCheck: Iterable[categorytheory.Object] = Iterable[categorytheory.Object](a, b)
   override protected val morphismsToCheck: Map[categorytheory.Object, Morphism] = Map[categorytheory.Object, Morphism](a -> av, b -> bv)

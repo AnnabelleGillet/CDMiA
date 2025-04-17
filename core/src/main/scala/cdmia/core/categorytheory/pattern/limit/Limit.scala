@@ -94,7 +94,26 @@ abstract class Limit(val vertex: categorytheory.Object, name: String = "Limit") 
   override def respectsUniversalProperty(category: Category): Boolean = {
     var respectsUniversalProperty: Boolean = true
 
-    for (objVertex <- category.objects if objVertex != vertex && respectsUniversalProperty) {
+    var checkDomainOfObjects = true
+    var vertexCandidates = List[Object]()
+
+    for (obj <- objectsToCheck if checkDomainOfObjects) {
+      if (category.morphisms.count(_.codomain == obj) <= 1) {
+        checkDomainOfObjects = false
+      } else {
+        vertexCandidates :::= category.getAllDomainObjects(obj)
+      }
+    }
+
+    if (objectsToCheck.isEmpty) {
+      vertexCandidates = category.objects.toList
+    } else if (checkDomainOfObjects) {
+      vertexCandidates :::= category.getAllDomainObjects(vertex)
+    } else {
+        vertexCandidates = category.getAllDomainObjects(vertex)
+    }
+
+    for (objVertex <- vertexCandidates if objVertex != vertex && respectsUniversalProperty) {
       // Find all the objects that can be vertex of the cone
       var candidate: Boolean = true
       var candidateVertexMorphisms = Map[categorytheory.Object, List[Morphism]]()

@@ -151,6 +151,12 @@ class Category private[core] (val name: String,
 
   // Used for caching.
   private var paths: Map[(Object, Object), List[Morphism]] = Map[(Object, Object), List[Morphism]]()
+  private val morphismsWithDomain: Map[Object, List[Morphism]] = (for (obj <- objects) yield {
+    obj -> morphisms.filter(_.domain == obj).toList
+  }).toMap
+  private val morphismsWithCodomain: Map[Object, List[Morphism]] = (for (obj <- objects) yield {
+    obj -> morphisms.filter(_.codomain == obj).toList
+  }).toMap
 
   if (!Config.disableRequire) {
     require(limits.forall(l => l.isValid(this)), "All the limits must be valid in the category.")
@@ -249,6 +255,27 @@ class Category private[core] (val name: String,
   }
 
   /**
+   * Get all objects that are domain of this object.
+   * 
+   * @param obj the object for which to find the domains
+   * @return the [[List]] of domain objects
+   */
+  def getAllDomainObjects(obj: Object): List[Object] = {
+    getAllDomainObjects(obj, List[Object](obj))
+  }
+  
+  private def getAllDomainObjects(obj: Object, listedObjects: List[Object]): List[Object] = {
+    val newDomains = for (morphism <- morphismsWithCodomain(obj) if !listedObjects.contains(morphism.domain)) yield {
+      morphism.domain
+    }
+    val recursiveDomains = (for (domain <- newDomains) yield {
+      getAllDomainObjects(domain, listedObjects ::: newDomains)
+    }).flatten
+    
+    listedObjects ::: newDomains ::: recursiveDomains
+  }
+  
+  /**
    * Returns true if the morphism or the composition exists in this category.
    *
    * @param morphism the [[Morphism]] to search in this category.
@@ -294,7 +321,8 @@ class Category private[core] (val name: String,
       val result = if (to == from) {
         List[Morphism](to.identityMorphism)
       } else {
-        (for (morphism <- morphisms.filter(m => m.domain == from && !testedObjects.contains(m.codomain))) yield {
+        //(for (morphism <- morphisms.filter(m => m.domain == from && !testedObjects.contains(m.codomain))) yield {
+        (for (morphism <- morphismsWithDomain(from).filter(m => !testedObjects.contains(m.codomain))) yield {
           if (morphism.codomain == to) {
             List[Morphism](morphism)
           } else {

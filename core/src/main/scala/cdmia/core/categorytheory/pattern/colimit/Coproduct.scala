@@ -1,6 +1,6 @@
 package cdmia.core.categorytheory.pattern.colimit
 
-import cdmia.core.categorytheory.{Category, Object}
+import cdmia.core.categorytheory.{Category, Config, Object}
 import cdmia.core.categorytheory.functor.Functor
 import cdmia.core.categorytheory.morphism.Morphism
 
@@ -19,11 +19,13 @@ import java.lang.Object as JObject
  * @param morphisms the [[Morphism]]s that are part of this coproduct.
  */
 class Coproduct(_vertex: Object, val objects: Iterable[Object], val morphisms: Iterable[Morphism], name: String = "Coproduct") extends Colimit(_vertex, name) {
-  require(objects.toSet.size == objects.size, "A coproduct cannot be built with duplicate objects.")
-  require(morphisms.toSet.size == morphisms.size, "A coproduct cannot be built with duplicate morphisms.")
-  require(morphisms.forall(_.codomain == vertex), "All the morphisms of the coproduct must have the vertex as codomain.")
-  require(objects.forall(o => morphisms.exists(m => m.domain == o)), "All the morphisms of the coproduct must have one of the objects as domain.")
-  require(morphisms.forall(m => objects.exists(o => m.domain == o)), "All the objects of the coproduct must be domain of at least one of the morphisms.")
+  if (!Config.disableRequire) {
+    require(objects.toSet.size == objects.size, "A coproduct cannot be built with duplicate objects.")
+    require(morphisms.toSet.size == morphisms.size, "A coproduct cannot be built with duplicate morphisms.")
+    require(morphisms.forall(_.codomain == vertex), "All the morphisms of the coproduct must have the vertex as codomain.")
+    require(objects.forall(o => morphisms.exists(m => m.domain == o)), "All the morphisms of the coproduct must have one of the objects as domain.")
+    require(morphisms.forall(m => objects.exists(o => m.domain == o)), "All the objects of the coproduct must be domain of at least one of the morphisms.")
+  }
   
   override protected val objectsToCheck: Iterable[Object] = objects
   override protected val morphismsToCheck: Map[Object, Morphism] = morphisms.map(m => m.domain -> m).toMap

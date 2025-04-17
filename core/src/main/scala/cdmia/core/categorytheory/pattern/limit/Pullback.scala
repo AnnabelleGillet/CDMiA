@@ -1,7 +1,7 @@
 package cdmia.core.categorytheory.pattern.limit
 
 import cdmia.core.categorytheory
-import cdmia.core.categorytheory.{Category, Object}
+import cdmia.core.categorytheory.{Category, Config, Object}
 import cdmia.core.categorytheory.functor.Functor
 import cdmia.core.categorytheory.morphism.{Morphism, MorphismComposition}
 
@@ -24,10 +24,12 @@ import cdmia.core.categorytheory.morphism.{Morphism, MorphismComposition}
 class Pullback(_vertex: categorytheory.Object, val a: categorytheory.Object, val b: categorytheory.Object, val c: categorytheory.Object,
                val va: Morphism, val vb: Morphism, val ac: Morphism, val bc: Morphism,
                name: String = "Pullback") extends Limit(_vertex, name) {
-  require(va.domain == vertex && va.codomain == a, s"va must be $vertex -> $a, but got ${va.domain} -> ${va.codomain}.")
-  require(vb.domain == vertex && vb.codomain == b, s"vb must be $vertex -> $b, but got ${vb.domain} -> ${vb.codomain}.")
-  require(ac.domain == a && ac.codomain == c, s"ac must be $a -> $c, but got ${ac.domain} -> ${ac.codomain}.")
-  require(bc.domain == b && bc.codomain == c, s"bc must be $b -> $c, but got ${bc.domain} -> ${bc.codomain}.")
+  if (!Config.disableRequire) {
+    require(va.domain == vertex && va.codomain == a, s"va must be $vertex -> $a, but got ${va.domain} -> ${va.codomain}.")
+    require(vb.domain == vertex && vb.codomain == b, s"vb must be $vertex -> $b, but got ${vb.domain} -> ${vb.codomain}.")
+    require(ac.domain == a && ac.codomain == c, s"ac must be $a -> $c, but got ${ac.domain} -> ${ac.codomain}.")
+    require(bc.domain == b && bc.codomain == c, s"bc must be $b -> $c, but got ${bc.domain} -> ${bc.codomain}.")
+  }
 
   override protected val objectsToCheck: Iterable[categorytheory.Object] = Iterable[categorytheory.Object](a, b)
   override protected val morphismsToCheck: Map[categorytheory.Object, Morphism] = Map[categorytheory.Object, Morphism](a -> va, b -> vb)

@@ -9,8 +9,8 @@ import java.sql._
 @main def main(args: String*) =
 	// Execute with "scala -classpath CDMiA-DataWrapper-0.2.0.jar:postgresql-42.7.3.jar benchmark_execution_postgres.scala"
 	
-	val file = java.io.PrintWriter("execution_time.csv")
-	
+	val file = java.io.PrintWriter("execution_time_postgres.csv")
+
 	// Conditions of experiments
 	val numberOfRepetitions: Int = 10
 	
@@ -51,7 +51,7 @@ import java.sql._
 		file.write(line + "\n")
 		file.flush()
 	}
-	
+
 	file.close()
 
 case class ExecutionTime(schemaLoadingMs: Long, migrationApplicationMs: Long)

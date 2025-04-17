@@ -2,7 +2,7 @@ package cdmia.core.categorytheory.pattern.limit
 
 import cdmia.core.categorytheory.{Category, Config, Object}
 import cdmia.core.categorytheory.functor.Functor
-import cdmia.core.categorytheory.morphism.Morphism
+import cdmia.core.categorytheory.morphism.{Morphism, MorphismComposition}
 
 import java.lang.Object as JObject
 
@@ -19,11 +19,13 @@ import java.lang.Object as JObject
  * @param morphisms the [[Morphism]]s that are part of this product.
  */
 class Product(_vertex: Object, val objects: Iterable[Object], val morphisms: Iterable[Morphism], name: String = "Product") extends Limit(_vertex, name) {
-  require(objects.toSet.size == objects.size, "A product cannot be built with duplicate objects.")
-  require(morphisms.toSet.size == morphisms.size, "A product cannot be built with duplicate morphisms.")
-  require(morphisms.forall(_.domain == vertex), "All the morphisms of the product must have the vertex as domain.")
-  require(objects.forall(o => morphisms.exists(m => m.codomain == o)), "All the morphisms of the product must have one of the objects as codomain.")
-  require(morphisms.forall(m => objects.exists(o => m.codomain == o)), "All the objects of the product must be codomain of at least one of the morphisms.")
+  if (!Config.disableRequire) {
+    require(objects.toSet.size == objects.size, "A product cannot be built with duplicate objects.")
+    require(morphisms.toSet.size == morphisms.size, "A product cannot be built with duplicate morphisms.")
+    require(morphisms.forall(_.domain == vertex), "All the morphisms of the product must have the vertex as domain.")
+    require(objects.forall(o => morphisms.exists(m => m.codomain == o)), "All the morphisms of the product must have one of the objects as codomain.")
+    require(morphisms.forall(m => objects.exists(o => m.codomain == o)), "All the objects of the product must be codomain of at least one of the morphisms.")
+  }
 
   override protected val objectsToCheck: Iterable[Object] = objects
   override protected val morphismsToCheck: Map[Object, Morphism] = morphisms.map(m => m.codomain -> m).toMap
@@ -66,7 +68,7 @@ class Product(_vertex: Object, val objects: Iterable[Object], val morphisms: Ite
     val vertexOrigins = functor.getSourceObjects(vertex)
     val morphismOrigins = morphisms.map(m => functor.getSourceMorphisms(m)).toList
 
-    val numberOfPossibleLimits: Int = vertexOrigins.size * morphismOrigins.map(_.size).product
+    val numberOfPossibleLimits: Int = vertexOrigins.size * morphismOrigins.map(_.size).sum
     if (numberOfPossibleLimits <= 0) {
       List[Limit]()
     } else {
@@ -78,7 +80,7 @@ class Product(_vertex: Object, val objects: Iterable[Object], val morphisms: Ite
     }
   }
 
-  private def combinationsGenerator(x: List[List[Morphism]]): List[List[Morphism]] = x match {
+  private def combinationsGenerator[T](x: List[List[T]]): List[List[T]] = x match {
     case Nil => List(Nil)
     case h :: _ => if (h.isEmpty) List(Nil) else h.flatMap(i => combinationsGenerator(x.tail).map(i :: _))
   }
